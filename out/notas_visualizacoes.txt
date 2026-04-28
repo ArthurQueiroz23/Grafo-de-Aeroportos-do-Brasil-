@@ -1,0 +1,39 @@
+Notas analíticas (Parte 1) — análise exploratória e explanatória
+================================================================
+
+Exploratórias (comportamento dos dados)
+---------------------------------------
+1) viz_exploratoria_distribuicao_graus.png — Histograma do grau
+   - O que mostra: concentração de aeroportos por número de conexões.
+   - Insight: identifica se a rede tem poucos hubs de alto grau ou distribuição mais uniforme.
+   - Tipo: histograma adequado para uma variável discreta (grau).
+
+2) viz_exploratoria_bfs_camadas.png — Camadas a partir de GRU
+   - O que mostra: quantos aeroportos estão a cada distância (em arestas) do hub GRU.
+   - Insight: revela “profundidade” da rede em torno do hub e possível decaimento rápido das camadas.
+   - Tipo: barras por categoria (distância).
+
+Explanatórias (mensagem para quem não conhece o projeto)
+--------------------------------------------------------
+3) viz_explanatoria_ranking_conectividade.png — Ranking por grau
+   - O que mostra: quais IATA concentram mais interligações diretas.
+   - Insight: comunica hubs regionais ou nacionais de forma imediata.
+   - Tipo: barras horizontais ordenadas (ranking).
+
+4) viz_explanatoria_regioes_ordem_tamanho.png — Regiões: ordem vs tamanho
+   - O que mostra: tamanho do subgrafo induzido por região (vértices e arestas internas).
+   - Insight: compara “massa” estrutural dentro de cada região no modelo escolhido.
+   - Tipo: barras agrupadas por região.
+
+Visualizações adicionais (enunciado ≥4)
+----------------------------------------
+5) viz_explanatoria_regioes_densidade.png — Densidade por região
+   - Reforça comparação regional usando densidade do subgrafo induzido (métrica normalizada).
+
+6) viz_subgrafo_maior_grau.png — Esquema do subgrafo dos maiores graus
+   - Destaca como os aeroportos mais conectados se ligam entre si no modelo (induzido top-k).
+
+Arquivos interativos
+----------------------
+- arvore_percurso.html / arvore_percurso.png: percursos mínimos Recife–POA e Manaus–SP.
+- grafo_interativo.html: grafo completo com tooltip (grau, região, densidade ego) e caminhos obrigatórios destacados.

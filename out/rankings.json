@@ -1,0 +1,13 @@
+{
+  "maior_grau": {
+    "aeroporto": "GRU",
+    "grau": 6
+  },
+  "maior_densidade_ego": {
+    "aeroporto": "CNF",
+    "grau": 1,
+    "ordem_ego": 2,
+    "tamanho_ego": 1,
+    "densidade_ego": 1.0
+  }
+}

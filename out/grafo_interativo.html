@@ -1,0 +1,228 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+                <link href="lib/tom-select/tom-select.css" rel="stylesheet">
+                <script src="lib/tom-select/tom-select.complete.min.js"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 640px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="BEL">BEL</option>
+                                
+                                    <option value="BSB">BSB</option>
+                                
+                                    <option value="CGH">CGH</option>
+                                
+                                    <option value="CNF">CNF</option>
+                                
+                                    <option value="CWB">CWB</option>
+                                
+                                    <option value="FLN">FLN</option>
+                                
+                                    <option value="FOR">FOR</option>
+                                
+                                    <option value="GIG">GIG</option>
+                                
+                                    <option value="GRU">GRU</option>
+                                
+                                    <option value="GYN">GYN</option>
+                                
+                                    <option value="JPA">JPA</option>
+                                
+                                    <option value="MAO">MAO</option>
+                                
+                                    <option value="NAT">NAT</option>
+                                
+                                    <option value="POA">POA</option>
+                                
+                                    <option value="PVH">PVH</option>
+                                
+                                    <option value="RBR">RBR</option>
+                                
+                                    <option value="REC">REC</option>
+                                
+                                    <option value="SSA">SSA</option>
+                                
+                                    <option value="THE">THE</option>
+                                
+                                    <option value="VIX">VIX</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "BEL", "label": "BEL", "shape": "dot", "title": "\u003cb\u003eBEL\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Norte\u003cbr\u003eGrau: 3\u003cbr\u003eDensidade ego: 0.5000"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "BSB", "label": "BSB", "shape": "dot", "title": "\u003cb\u003eBSB\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Centro-Oeste\u003cbr\u003eGrau: 4\u003cbr\u003eDensidade ego: 0.4000"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "CGH", "label": "CGH", "shape": "dot", "title": "\u003cb\u003eCGH\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Sudeste\u003cbr\u003eGrau: 1\u003cbr\u003eDensidade ego: 1.0000"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "CNF", "label": "CNF", "shape": "dot", "title": "\u003cb\u003eCNF\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Sudeste\u003cbr\u003eGrau: 1\u003cbr\u003eDensidade ego: 1.0000"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "CWB", "label": "CWB", "shape": "dot", "title": "\u003cb\u003eCWB\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Sul\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "FLN", "label": "FLN", "shape": "dot", "title": "\u003cb\u003eFLN\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Sul\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "FOR", "label": "FOR", "shape": "dot", "title": "\u003cb\u003eFOR\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Nordeste\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "GIG", "label": "GIG", "shape": "dot", "title": "\u003cb\u003eGIG\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Sudeste\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "GRU", "label": "GRU", "shape": "dot", "title": "\u003cb\u003eGRU\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Sudeste\u003cbr\u003eGrau: 6\u003cbr\u003eDensidade ego: 0.2857"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "GYN", "label": "GYN", "shape": "dot", "title": "\u003cb\u003eGYN\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Centro-Oeste\u003cbr\u003eGrau: 1\u003cbr\u003eDensidade ego: 1.0000"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "JPA", "label": "JPA", "shape": "dot", "title": "\u003cb\u003eJPA\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Nordeste\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "MAO", "label": "MAO", "shape": "dot", "title": "\u003cb\u003eMAO\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Norte\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "NAT", "label": "NAT", "shape": "dot", "title": "\u003cb\u003eNAT\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Nordeste\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "POA", "label": "POA", "shape": "dot", "title": "\u003cb\u003ePOA\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Sul\u003cbr\u003eGrau: 1\u003cbr\u003eDensidade ego: 1.0000"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "PVH", "label": "PVH", "shape": "dot", "title": "\u003cb\u003ePVH\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Norte\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "RBR", "label": "RBR", "shape": "dot", "title": "\u003cb\u003eRBR\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Norte\u003cbr\u003eGrau: 1\u003cbr\u003eDensidade ego: 1.0000"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "REC", "label": "REC", "shape": "dot", "title": "\u003cb\u003eREC\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Nordeste\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "SSA", "label": "SSA", "shape": "dot", "title": "\u003cb\u003eSSA\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Nordeste\u003cbr\u003eGrau: 2\u003cbr\u003eDensidade ego: 0.6667"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "THE", "label": "THE", "shape": "dot", "title": "\u003cb\u003eTHE\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Nordeste\u003cbr\u003eGrau: 1\u003cbr\u003eDensidade ego: 1.0000"}, {"borderWidth": 1, "color": "#97c2fc", "font": {"color": "#222222"}, "id": "VIX", "label": "VIX", "shape": "dot", "title": "\u003cb\u003eVIX\u003c/b\u003e\u003cbr\u003eRegi\u00e3o: Sudeste\u003cbr\u003eGrau: 1\u003cbr\u003eDensidade ego: 1.0000"}]);
+                  edges = new vis.DataSet([{"color": "#95a5a6", "from": "JPA", "to": "THE", "value": 1.0, "width": 1.2}, {"color": "#c0392b", "from": "BEL", "to": "GRU", "value": 2.0, "width": 4}, {"color": "#95a5a6", "from": "REC", "to": "SSA", "value": 1.0, "width": 1.2}, {"color": "#95a5a6", "from": "GIG", "to": "GRU", "value": 1.0, "width": 1.2}, {"color": "#c0392b", "from": "GRU", "to": "REC", "value": 2.0, "width": 4}, {"color": "#95a5a6", "from": "BEL", "to": "PVH", "value": 1.0, "width": 1.2}, {"color": "#95a5a6", "from": "JPA", "to": "NAT", "value": 1.0, "width": 1.2}, {"color": "#95a5a6", "from": "CNF", "to": "GRU", "value": 1.0, "width": 1.2}, {"color": "#95a5a6", "from": "BSB", "to": "GYN", "value": 1.0, "width": 1.2}, {"color": "#95a5a6", "from": "CGH", "to": "GRU", "value": 1.0, "width": 1.2}, {"color": "#95a5a6", "from": "FOR", "to": "SSA", "value": 1.0, "width": 1.2}, {"color": "#95a5a6", "from": "BSB", "to": "MAO", "value": 2.5, "width": 1.2}, {"color": "#c0392b", "from": "BSB", "to": "GRU", "value": 1.5, "width": 4}, {"color": "#c0392b", "from": "FLN", "to": "POA", "value": 1.0, "width": 4}, {"color": "#c0392b", "from": "BEL", "to": "MAO", "value": 1.0, "width": 4}, {"color": "#c0392b", "from": "BSB", "to": "CWB", "value": 2.0, "width": 4}, {"color": "#95a5a6", "from": "PVH", "to": "RBR", "value": 1.0, "width": 1.2}, {"color": "#95a5a6", "from": "GIG", "to": "VIX", "value": 1.0, "width": 1.2}, {"color": "#95a5a6", "from": "FOR", "to": "NAT", "value": 1.0, "width": 1.2}, {"color": "#c0392b", "from": "CWB", "to": "FLN", "value": 1.0, "width": 4}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

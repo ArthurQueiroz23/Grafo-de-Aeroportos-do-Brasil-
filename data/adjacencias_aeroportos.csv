@@ -1,0 +1,21 @@
+origem,destino,tipo_conexao,justificativa,peso
+REC,SSA,regional,malha regional costeira Nordeste (eixo turístico/de negócios),1.0
+SSA,FOR,regional,conectividade entre capitais do Nordeste,1.0
+FOR,NAT,regional,fluxo regional Norte-Leste do Nordeste,1.0
+NAT,JPA,regional,curto alcance entre capitais vizinhas,1.0
+JPA,THE,regional,fechamento de cadeia que mantém o subgrafo Nordeste conexo,1.0
+GRU,CGH,regional,dupla metropolitana SP (mesma região Sudeste),1.0
+GRU,GIG,regional,eixo Rio–SP principal do Sudeste,1.0
+GRU,CNF,regional,ligação SP–BH (frequência comercial típica),1.0
+GIG,VIX,regional,corredor litorâneo RJ–ES,1.0
+BSB,GYN,regional,única conexão interna CO com dois aeroportos listados,1.0
+CWB,FLN,regional,malha Sul atlântica Curitiba–Florianópolis,1.0
+FLN,POA,regional,continuidade da malha Sul até Porto Alegre,1.0
+MAO,BEL,regional,eixo Amazônia ocidental–capital paraense,1.0
+BEL,PVH,regional,integração Norte (Belém–Porto Velho),1.0
+PVH,RBR,regional,fechamento da cadeia Norte sem tornar o grafo completo,1.0
+REC,GRU,hub_nacional,ligação Nordeste ao hub nacional (GRU),2.0
+BEL,GRU,hub_nacional,Norte acessa hub nacional via Belém,2.0
+MAO,BSB,inter_regiao,capitais Norte–Centro-Oeste (longo alcance),2.5
+GRU,BSB,hub_nacional,eixo político-econômico SP–Brasília entre hubs,1.5
+BSB,CWB,inter_regiao,Centro-Oeste ao Sul (malha nacional via capital federal),2.0
