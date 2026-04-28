@@ -1,1 +1,1 @@
-# Pacote principal do projeto (CLI e pipelines).
+# Pacote principal do projetoo (CLI e pipelines).
