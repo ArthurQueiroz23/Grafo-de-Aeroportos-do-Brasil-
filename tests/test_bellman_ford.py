@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 import sys
 
+# pegando a raiz 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -10,15 +11,27 @@ from src.graphs.graph import Graph
 
 
 class TestBellmanFord(unittest.TestCase):
+
     def test_matches_dijkstra_when_nonneg(self) -> None:
         g = Graph()
+
+        # montando o grafo
         g.add_edge("A", "B", 2.0)
         g.add_edge("B", "C", 3.0)
         g.add_edge("A", "C", 100.0)
+
+        # rodando bellman-ford
         dist_bf, _, neg = bellman_ford(g, "A")
+
+        # não deve ter ciclo negativo
         self.assertFalse(neg)
+
+        # comparando com o menor caminho normal
         cost_d, path_d = shortest_path(g, "A", "C")
+
         self.assertAlmostEqual(dist_bf["C"], cost_d)
+
+        # conferindo o valor esperado
         self.assertAlmostEqual(dist_bf["C"], 5.0)
 
 
