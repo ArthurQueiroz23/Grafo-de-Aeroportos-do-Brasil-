@@ -50,6 +50,26 @@ python -m src.cli viz        # requer CSV/JSON de metricas; gera figuras e HTML
 ```bash
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
+## Observacoes importantes
+
+Este projeto implementa manualmente algoritmos classicos de grafos, como Dijkstra, BFS e DFS, com foco no entendimento pratico da logica por tras dessas abordagens. Alem disso, os dados sao tratados como um grafo nao direcionado com pesos, garantindo maior proximidade com cenarios reais de rotas aereas. Recomenda-se executar primeiro o comando `tudo` para garantir que todas as dependencias de arquivos gerados estejam atualizadas antes de rodar comandos isolados.
+
+## Exemplo de uso programatico
+
+```python
+from src.graphs.graph import Graph
+
+g = Graph()
+
+# add arestas (origem, destino, peso)
+g.add_edge("REC", "GRU", 2300)
+g.add_edge("GRU", "POA", 1100)
+
+# calcula menor caminho
+dist, path = g.dijkstra("REC", "POA")
+
+print("dist:", dist)   # distancia total
+print("caminho:", path)  # rota encontrada
 
 ## Restrições do enunciado
 
