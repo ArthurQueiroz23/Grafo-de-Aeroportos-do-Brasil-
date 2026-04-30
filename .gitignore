@@ -1,0 +1,4 @@
+data/dataset_parte2/roadNet-CA.txt.gz
+__pycache__/
+*.pyc
+.pytest_cache/
