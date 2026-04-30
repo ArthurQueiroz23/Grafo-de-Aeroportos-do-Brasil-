@@ -71,6 +71,9 @@ dist, path = g.dijkstra("REC", "POA")
 print("dist:", dist)   # distancia total
 print("caminho:", path)  # rota encontrada
 
+
+
+
 ## Restrições do enunciado
 
 Não se usa **networkx**, **igraph** etc. para BFS, DFS, Dijkstra ou Bellman–Ford — apenas as implementações em `src/graphs/algorithms.py`.
