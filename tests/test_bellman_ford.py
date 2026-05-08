@@ -14,6 +14,14 @@ from src.graphs.directed_algorithms import bellman_ford_digraph
 
 
 class TestBellmanFord(unittest.TestCase):
+    def test_cicloNegativo(self) -> None:
+        g = DiGraph()
+
+        g.add_edge(0, 1, 2.0)
+        g.add_edge(1, 2, -3.0)
+        g.add_edge(2, 0, -1.0)
+        _, _, neg = bellman_ford_digraph(g, 0)
+        self.assertTrue(neg)
     
     def test_pesoNegativoSemCiclo(self ) -> None:
         g = DiGraph()
