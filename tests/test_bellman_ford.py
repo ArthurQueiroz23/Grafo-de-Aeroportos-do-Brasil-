@@ -25,7 +25,7 @@ class TestBellmanFord(unittest.TestCase):
     
     def test_pesoNegativoSemCiclo(self ) -> None:
         g = DiGraph()
-
+        #parece qye esse digraph n aceita strings, então vou usar inteiros mesmo
         g.add_edge(0, 1, 2.0)
         g.add_edge(1, 2, -3.0)
         g.add_edge(0, 2, 100.0)
