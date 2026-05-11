@@ -1,5 +1,5 @@
 {
-  "arquivo": "C:\\Users\\gustavo.carneiro\\Desktop\\Projeto de Grafos\\Grafo-de-Aeroportos-do-Brasil-\\data\\dataset_parte2\\roadNet-CA.txt.gz",
+  "arquivo": "C:\\Users\\Administrador\\faculdade\\Grafo-de-Aeroportos-do-Brasil-\\data\\dataset_parte2\\roadNet-CA.txt.gz",
   "linhas_lidas_amostra": 600000,
   "wcc_tamanho_amostra": 83933,
   "max_vertices": 3000,
