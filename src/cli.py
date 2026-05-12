@@ -1,55 +1,77 @@
-from __future__ import annotations
-
-import argparse
 from pathlib import Path
+import argparse
 
-from .graphs.io import build_graph_from_adjacency_csv, load_airports_table
-from .solve import run_metrics, run_routes
+from .graphs.io import (
+    build_graph_from_adjacency_csv,
+    load_airports_table,
+)
+
+from .solve import (
+    run_metrics,
+    run_routes,
+)
+
 from .viz import run_all_visualizations
 
 
-def _root() -> Path:
+def get_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
-def main() -> None:
-    root = _root()
-    data = root / "data"
-    out = root / "out"
-    ap_path = data / "aeroportos_data.csv"
-    adj_path = data / "adjacencias_aeroportos.csv"
-    rotas_path = data / "rotas.csv"
+def main():
+    root = get_root()
+
+    data_dir = root / "data"
+    out_dir = root / "out"
+
+    aeroportos_csv = data_dir / "aeroportos_data.csv"
+    adj_csv = data_dir / "adjacencias_aeroportos.csv"
+    rotas_csv = data_dir / "rotas.csv"
 
     parser = argparse.ArgumentParser(
-        description="Grafo de aeroportos (Parte 1) + RoadNet-CA / Parte 2 (SNAP)"
+        description="Projeto de Teoria dos Grafos"
     )
+
     parser.add_argument(
         "comando",
-        choices=["metricas", "rotas", "viz", "tudo", "parte2"],
-        help="Parte 1: metricas, rotas, viz, tudo. Parte 2: parte2 (roadNet-CA + BF vs Dijkstra).",
+        choices=[
+            "metricas",
+            "rotas",
+            "viz",
+            "tudo",
+            "parte2",
+        ],
+        help="Comando que será executado",
     )
+
     parser.add_argument(
         "--max-nodes",
         type=int,
         default=3000,
-        help="Parte 2: tamanho máximo do subgrafo conexo (nós).",
+        help="Quantidade máxima de nós da Parte 2",
     )
+
     parser.add_argument(
         "--max-lines",
         type=int,
-        default=600_000,
-        help="Parte 2: limite de linhas lidas do .gz (amostra do grafo completo).",
+        default=600000,
+        help="Quantidade máxima de linhas lidas do dataset SNAP",
     )
+
     parser.add_argument(
         "--peso",
         choices=["unit", "synthetic_km"],
         default="synthetic_km",
-        help="Parte 2: modo de peso quando o SNAP não traz distância.",
+        help="Tipo de peso das arestas da Parte 2",
     )
 
     args = parser.parse_args()
 
+    # =========================
+    # PARTE 2
+    # =========================
     if args.comando == "parte2":
+
         from .solve_parte2 import run_parte2
 
         run_parte2(
@@ -58,29 +80,71 @@ def main() -> None:
             max_lines_read=args.max_lines,
             weight_mode=args.peso,
         )
+
         return
 
-    graph = build_graph_from_adjacency_csv(adj_path)
-    airports = load_airports_table(ap_path)
+    # =========================
+    # PARTE 1
+    # =========================
 
-    if args.comando in ("metricas", "tudo"):
-        run_metrics(graph, airports, out)
-        print(f"Métricas gravadas em {out}")
+    grafo = build_graph_from_adjacency_csv(adj_csv)
 
-    if args.comando in ("rotas", "tudo"):
-        if not rotas_path.exists():
-            raise SystemExit(f"Arquivo ausente: {rotas_path}")
-        run_routes(graph, rotas_path, out)
-        print(f"Distâncias gravadas em {out / 'distancias_rotas.csv'}")
+    aeroportos = load_airports_table(aeroportos_csv)
 
-    if args.comando in ("viz", "tudo"):
-        need = [out / "ego_aeroportos.csv", out / "graus.csv", out / "regioes.json"]
-        for p in need:
-            if not p.exists():
-                raise SystemExit("Execute 'metricas' antes de 'viz' ou use 'tudo'.")
+    # =========================
+    # MÉTRICAS
+    # =========================
+    if args.comando in ["metricas", "tudo"]:
+
+        run_metrics(
+            grafo,
+            aeroportos,
+            out_dir,
+        )
+
+        print("Métricas geradas com sucesso!")
+
+    # =========================
+    # ROTAS
+    # =========================
+    if args.comando in ["rotas", "tudo"]:
+
+        if not rotas_csv.exists():
+            raise SystemExit(
+                f"Arquivo não encontrado: {rotas_csv}"
+            )
+
+        run_routes(
+            grafo,
+            rotas_csv,
+            out_dir,
+        )
+
+        print("Rotas calculadas com sucesso!")
+
+    # =========================
+    # VISUALIZAÇÕES
+    # =========================
+    if args.comando in ["viz", "tudo"]:
+
+        arquivos_necessarios = [
+            out_dir / "ego_aeroportos.csv",
+            out_dir / "graus.csv",
+            out_dir / "regioes.json",
+        ]
+
+        for arquivo in arquivos_necessarios:
+
+            if not arquivo.exists():
+
+                raise SystemExit(
+                    "Execute primeiro: python -m src.cli metricas"
+                )
+
         run_all_visualizations(root)
-        print(f"Visualizações gravadas em {out}")
+
+        print("Visualizações geradas com sucesso!")
 
 
 if __name__ == "__main__":
-    main()
+    main() 
