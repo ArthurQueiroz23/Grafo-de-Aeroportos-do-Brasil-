@@ -363,13 +363,13 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 roadNet-CA:
 
-[SNAP roadNet-CA](https://snap.stanford.edu/data/roadNet-CA.html?utm_source=chatgpt.com)
+[SNAP roadNet-CA]
 
 ---
 
 ## Bibliotecas
 
-* [Streamlit](https://streamlit.io?utm_source=chatgpt.com)
-* [PyVis](https://pyvis.readthedocs.io?utm_source=chatgpt.com)
-* [Matplotlib](https://matplotlib.org?utm_source=chatgpt.com)
-* [Pandas](https://pandas.pydata.org?utm_source=chatgpt.com)
+* [Streamlit]
+* [PyVis]
+* [Matplotlib]
+* [Pandas]
