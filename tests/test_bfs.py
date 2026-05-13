@@ -6,14 +6,32 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.graphs.algorithms import bfs_distances, bfs_order
-from src.graphs.graph import Graph
+from src.algorithms import bfs_distances, bfs_order
+
+
+class Grafo:
+    def __init__(self):
+        self.adj = {}
+
+    def add_edge(self, u, v, w=1.0):
+        self.adj.setdefault(u, {})
+        self.adj.setdefault(v, {})
+
+        # como é grafo normal vai pros 2 lados
+        self.adj[u][v] = w
+        self.adj[v][u] = w
+
+    def neighbors(self, u):
+        return self.adj.get(u, {}).items()
+
+    def vertices(self):
+        return list(self.adj.keys())
 
 
 class TestBFS(unittest.TestCase):
 
-    def test_bfs_order_path(self) -> None:
-        g = Graph()
+    def test_bfs_order_path(self):
+        g = Grafo()
 
         # montando o grafo
         g.add_edge("A", "B", 1.0)
@@ -23,16 +41,16 @@ class TestBFS(unittest.TestCase):
         # rodando bfs
         o = bfs_order(g, "A")
 
-        # tem que começar pelo A
+        # tem q começar no A
         self.assertEqual(o[0], "A")
 
-        # conferindo se passou por todos
+        # conferindo os vertices
         self.assertEqual(set(o), {"A", "B", "C", "D"})
 
-        # vendo as distâncias a partir do A
+        # distancias saindo do A
         d = bfs_distances(g, "A")
 
-        # distância de A até D deve ser 3
+        # A -> D = 3 arestas
         self.assertEqual(d["D"], 3)
 
 
