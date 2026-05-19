@@ -12,32 +12,42 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import pandas as pd
 
-from .graphs.algorithms import bfs_distances
-from .graphs.graph import Graph
-from .graphs.io import (
+from .algorithms import (
+    bfs_distances,
+    iter_edges,
+)
+
+from .io import (
     build_graph_from_adjacency_csv,
     load_airports_table,
 )
 
 
 def _edge_key(u: str, v: str) -> Tuple[str, str]:
+
     if u < v:
         return (u, v)
+
     return (v, u)
 
 
 def _path_edges(path: List[str]) -> Set[Tuple[str, str]]:
-    edges: Set[Tuple[str, str]] = set()
+
+    edges = set()
 
     for i in range(len(path) - 1):
+
         u = path[i]
         v = path[i + 1]
+
         edges.add(_edge_key(u, v))
 
     return edges
 
 
-def _matplotlib_style() -> None:
+def _matplotlib_style():
+
+    # estilo simples
     plt.rcParams.update(
         {
             "figure.facecolor": "white",
@@ -52,7 +62,7 @@ def _matplotlib_style() -> None:
 def plot_distribuicao_graus(
     out_path: Path,
     df_graus: pd.DataFrame,
-) -> None:
+):
 
     _matplotlib_style()
 
@@ -68,7 +78,9 @@ def plot_distribuicao_graus(
     )
 
     ax.set_title("Distribuição dos Graus")
+
     ax.set_xlabel("Grau")
+
     ax.set_ylabel("Quantidade")
 
     legenda = mpatches.Patch(
@@ -89,7 +101,7 @@ def plot_ranking_graus(
     out_path: Path,
     df_graus: pd.DataFrame,
     top_n: int = 12,
-) -> None:
+):
 
     _matplotlib_style()
 
@@ -108,7 +120,9 @@ def plot_ranking_graus(
     )
 
     ax.set_title("Aeroportos Mais Conectados")
+
     ax.set_xlabel("Grau")
+
     ax.set_ylabel("Aeroporto")
 
     fig.tight_layout()
@@ -121,12 +135,14 @@ def plot_ranking_graus(
 def plot_regioes_metricas(
     out_path: Path,
     regioes_json: Path,
-) -> None:
+):
 
     _matplotlib_style()
 
     data = json.loads(
-        regioes_json.read_text(encoding="utf-8")
+        regioes_json.read_text(
+            encoding="utf-8"
+        )
     )
 
     regioes = []
@@ -134,6 +150,7 @@ def plot_regioes_metricas(
     tamanhos = []
 
     for item in data:
+
         regioes.append(item["regiao"])
         ordens.append(item["ordem"])
         tamanhos.append(item["tamanho"])
@@ -159,9 +176,12 @@ def plot_regioes_metricas(
     )
 
     ax.set_xticks(list(x))
+
     ax.set_xticklabels(regioes)
 
-    ax.set_title("Ordem e Tamanho por Região")
+    ax.set_title(
+        "Ordem e Tamanho por Região"
+    )
 
     ax.legend()
 
@@ -175,18 +195,21 @@ def plot_regioes_metricas(
 def plot_regioes_densidade(
     out_path: Path,
     regioes_json: Path,
-) -> None:
+):
 
     _matplotlib_style()
 
     data = json.loads(
-        regioes_json.read_text(encoding="utf-8")
+        regioes_json.read_text(
+            encoding="utf-8"
+        )
     )
 
     regioes = []
     densidades = []
 
     for item in data:
+
         regioes.append(item["regiao"])
         densidades.append(item["densidade"])
 
@@ -199,10 +222,13 @@ def plot_regioes_densidade(
     )
 
     ax.set_title("Densidade por Região")
+
     ax.set_xlabel("Região")
+
     ax.set_ylabel("Densidade")
 
     for i in range(len(densidades)):
+
         ax.text(
             i,
             densidades[i] + 0.002,
@@ -219,15 +245,18 @@ def plot_regioes_densidade(
 
 def plot_bfs_camadas(
     out_path: Path,
-    graph: Graph,
+    graph: dict,
     fonte: str = "GRU",
-) -> None:
+):
 
     _matplotlib_style()
 
-    distancias = bfs_distances(graph, fonte)
+    distancias = bfs_distances(
+        graph,
+        fonte,
+    )
 
-    camadas: Dict[int, int] = {}
+    camadas = {}
 
     for dist in distancias.values():
 
@@ -251,9 +280,15 @@ def plot_bfs_camadas(
         color="#ccb974",
     )
 
-    ax.set_title(f"BFS a partir de {fonte}")
+    ax.set_title(
+        f"BFS a partir de {fonte}"
+    )
+
     ax.set_xlabel("Distância")
-    ax.set_ylabel("Quantidade de aeroportos")
+
+    ax.set_ylabel(
+        "Quantidade de aeroportos"
+    )
 
     fig.tight_layout()
 
@@ -264,16 +299,19 @@ def plot_bfs_camadas(
 
 def plot_subgrafo_maior_grau(
     out_path: Path,
-    graph: Graph,
+    graph: dict,
     df_graus: pd.DataFrame,
     top_k: int = 8,
-) -> None:
+):
 
     _matplotlib_style()
 
     top = (
         df_graus
-        .sort_values("grau", ascending=False)
+        .sort_values(
+            "grau",
+            ascending=False,
+        )
         .head(top_k)["aeroporto"]
         .tolist()
     )
@@ -282,10 +320,13 @@ def plot_subgrafo_maior_grau(
 
     arestas = []
 
-    for u, v, w in graph.iter_edges():
+    for u, v, w in iter_edges(graph):
 
         if u in top_set and v in top_set:
-            arestas.append((u, v, w))
+
+            arestas.append(
+                (u, v, w)
+            )
 
     n = len(top)
 
@@ -293,7 +334,9 @@ def plot_subgrafo_maior_grau(
 
     for i in range(n):
 
-        angulo = 2 * math.pi * i / n
+        angulo = (
+            2 * math.pi * i / n
+        )
 
         posicoes[top[i]] = (
             math.cos(angulo),
@@ -303,9 +346,14 @@ def plot_subgrafo_maior_grau(
     graus = {}
 
     for aeroporto in top:
-        graus[aeroporto] = graph.degree(aeroporto)
 
-    fig, ax = plt.subplots(figsize=(9, 9))
+        graus[aeroporto] = len(
+            graph[aeroporto]
+        )
+
+    fig, ax = plt.subplots(
+        figsize=(9, 9)
+    )
 
     for u, v, w in arestas:
 
@@ -323,7 +371,9 @@ def plot_subgrafo_maior_grau(
 
         x, y = posicoes[aeroporto]
 
-        tamanho = 300 + graus[aeroporto] * 120
+        tamanho = (
+            300 + graus[aeroporto] * 120
+        )
 
         ax.scatter(
             x,
@@ -342,7 +392,9 @@ def plot_subgrafo_maior_grau(
             fontweight="bold",
         )
 
-    ax.set_title("Subgrafo dos Aeroportos Mais Conectados")
+    ax.set_title(
+        "Subgrafo dos Aeroportos Mais Conectados"
+    )
 
     ax.axis("off")
 
@@ -353,7 +405,7 @@ def plot_subgrafo_maior_grau(
     plt.close(fig)
 
 
-def run_all_visualizations(root: Path) -> None:
+def run_all_visualizations(root: Path):
 
     data_dir = root / "data"
 

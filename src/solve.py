@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, Set
 
 import pandas as pd
 
@@ -31,9 +31,10 @@ def num_edges(graph):
     total = 0
 
     for u in graph:
+
         total += len(graph[u])
 
-    # divide por 2 pq é nao direcionado
+    # divide por 2 pq eh nao direcionado
     return total // 2
 
 
@@ -128,7 +129,7 @@ def run_metrics(
         encoding="utf-8",
     )
 
-    # metricas regioes
+    # regioes
     regioes_lista = [
         "Norte",
         "Nordeste",
@@ -169,7 +170,7 @@ def run_metrics(
 
     graus_rows = []
 
-    # metricas por aeroporto
+    # roda aeroporto por aeroporto
     for iata in sorted(vertices):
 
         grau = len(graph[iata])
@@ -224,7 +225,9 @@ def run_metrics(
 
     # rankings
     rk = {
-        "maior_grau": df_graus.iloc[0].to_dict(),
+
+        "maior_grau":
+            df_graus.iloc[0].to_dict(),
 
         "maior_densidade_ego":
             df_ego.sort_values(
@@ -249,6 +252,8 @@ def run_routes(
     graph: dict,
     routes_path: Path,
     out_dir: Path,
+    origem_filtro: str | None = None,
+    destino_filtro: str | None = None,
 ):
 
     # cria pasta
@@ -257,12 +262,25 @@ def run_routes(
         exist_ok=True
     )
 
+    # le rotas
     routes = load_routes(routes_path)
 
     out_rows = []
 
     # calcula caminhos
     for origem, destino in routes:
+
+        # filtra origem
+        if origem_filtro:
+
+            if origem != origem_filtro:
+                continue
+
+        # filtra destino
+        if destino_filtro:
+
+            if destino != destino_filtro:
+                continue
 
         custo, caminho = shortest_path(
             graph,
@@ -280,6 +298,7 @@ def run_routes(
             {
                 "origem": origem,
                 "destino": destino,
+
                 "custo":
                     custo
                     if custo != float("inf")

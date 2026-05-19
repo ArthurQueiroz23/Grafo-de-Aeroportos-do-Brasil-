@@ -16,12 +16,15 @@ ROOT = Path(__file__).resolve().parent
 
 sys.path.insert(0, str(ROOT))
 
-from src.graphs.io import (
+from src.io import (
     build_graph_from_adjacency_csv,
     load_airports_table,
 )
 
-from src.graphs.algorithms import shortest_path
+from src.algorithms import (
+    shortest_path,
+    iter_edges,
+)
 
 from src.viz import (
     _edge_key,
@@ -156,7 +159,7 @@ def pyvis_rota(
         notebook=False,
     )
 
-    for aeroporto in sorted(grafo.vertices()):
+    for aeroporto in sorted(grafo.keys()):
 
         regiao = regiao_por_iata.get(
             aeroporto,
@@ -186,7 +189,7 @@ def pyvis_rota(
             size=15 + grau * 4,
         )
 
-    for origem, destino, peso in grafo.iter_edges():
+    for origem, destino, peso in iter_edges(grafo):
 
         chave = _edge_key(
             origem,
@@ -405,7 +408,7 @@ elif pagina == "Calculadora de Rotas":
         "Calcula menor caminho usando Dijkstra."
     )
 
-    vertices = sorted(grafo.vertices())
+    vertices = sorted(grafo.keys())
 
     col1, col2 = st.columns(2)
 
@@ -485,4 +488,4 @@ elif pagina == "Calculadora de Rotas":
                     html,
                     height=480,
                     scrolling=False,
-                ) 
+                )

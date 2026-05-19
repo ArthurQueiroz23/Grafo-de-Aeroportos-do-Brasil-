@@ -1,7 +1,7 @@
 from pathlib import Path
 import argparse
 
-from .graphs.io import (
+from .io import (
     build_graph_from_adjacency_csv,
     load_airports_table,
 )
@@ -15,10 +15,13 @@ from .viz import run_all_visualizations
 
 
 def get_root() -> Path:
+
+    # pega raiz do projeto
     return Path(__file__).resolve().parents[1]
 
 
 def main():
+
     root = get_root()
 
     data_dir = root / "data"
@@ -41,28 +44,42 @@ def main():
             "tudo",
             "parte2",
         ],
-        help="Comando que será executado",
+        help="Comando que vai rodar",
     )
 
     parser.add_argument(
         "--max-nodes",
         type=int,
         default=3000,
-        help="Quantidade máxima de nós da Parte 2",
+        help="Limite de nós da parte 2",
     )
 
     parser.add_argument(
         "--max-lines",
         type=int,
         default=600000,
-        help="Quantidade máxima de linhas lidas do dataset SNAP",
+        help="Limite de linhas lidas",
     )
 
     parser.add_argument(
         "--peso",
         choices=["unit", "synthetic_km"],
         default="synthetic_km",
-        help="Tipo de peso das arestas da Parte 2",
+        help="Tipo de peso",
+    )
+
+    # filtro origem
+    parser.add_argument(
+        "--origem",
+        type=str,
+        help="Filtra aeroporto de origem",
+    )
+
+    # filtro destino
+    parser.add_argument(
+        "--destino",
+        type=str,
+        help="Filtra aeroporto de destino",
     )
 
     args = parser.parse_args()
@@ -87,12 +104,18 @@ def main():
     # PARTE 1
     # =========================
 
-    grafo = build_graph_from_adjacency_csv(adj_csv)
+    # monta grafo
+    grafo = build_graph_from_adjacency_csv(
+        adj_csv
+    )
 
-    aeroportos = load_airports_table(aeroportos_csv)
+    # tabela aeroportos
+    aeroportos = load_airports_table(
+        aeroportos_csv
+    )
 
     # =========================
-    # MÉTRICAS
+    # METRICAS
     # =========================
     if args.comando in ["metricas", "tudo"]:
 
@@ -102,28 +125,32 @@ def main():
             out_dir,
         )
 
-        print("Métricas geradas com sucesso!")
+        print("Metricas geradas!")
 
     # =========================
     # ROTAS
     # =========================
     if args.comando in ["rotas", "tudo"]:
 
+        # garante csv
         if not rotas_csv.exists():
+
             raise SystemExit(
-                f"Arquivo não encontrado: {rotas_csv}"
+                f"Arquivo nao encontrado: {rotas_csv}"
             )
 
         run_routes(
             grafo,
             rotas_csv,
             out_dir,
+            origem_filtro=args.origem,
+            destino_filtro=args.destino,
         )
 
-        print("Rotas calculadas com sucesso!")
+        print("Rotas calculadas!")
 
     # =========================
-    # VISUALIZAÇÕES
+    # VISUALIZACOES
     # =========================
     if args.comando in ["viz", "tudo"]:
 
@@ -133,18 +160,19 @@ def main():
             out_dir / "regioes.json",
         ]
 
+        # confere arquivos
         for arquivo in arquivos_necessarios:
 
             if not arquivo.exists():
 
                 raise SystemExit(
-                    "Execute primeiro: python -m src.cli metricas"
+                    "Rode antes: python -m src.cli metricas"
                 )
 
         run_all_visualizations(root)
 
-        print("Visualizações geradas com sucesso!")
+        print("Visualizacoes geradas!")
 
 
 if __name__ == "__main__":
-    main() 
+    main()
