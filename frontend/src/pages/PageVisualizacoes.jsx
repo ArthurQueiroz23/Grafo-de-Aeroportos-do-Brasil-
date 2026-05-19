@@ -1,13 +1,13 @@
 import { useState } from "react";
 
 const IMAGES = [
-  { src: "/out/viz_exploratoria_distribuicao_graus.png", label: "Distribuição de graus" },
-  { src: "/out/viz_exploratoria_bfs_camadas.png", label: "Camadas BFS" },
-  { src: "/out/viz_explanatoria_ranking_conectividade.png", label: "Ranking de conectividade" },
-  { src: "/out/viz_explanatoria_regioes_ordem_tamanho.png", label: "Regiões — ordem e tamanho" },
-  { src: "/out/viz_explanatoria_regioes_densidade.png", label: "Regiões — densidade" },
-  { src: "/out/viz_subgrafo_maior_grau.png", label: "Subgrafo do maior grau (GRU)" },
-  { src: "/out/arvore_percurso.png", label: "Árvore de percurso DFS" },
+  { src: "/out/viz_exploratoria_distribuicao_graus.png",      label: "Distribuição de graus" },
+  { src: "/out/viz_exploratoria_bfs_camadas.png",             label: "Camadas BFS" },
+  { src: "/out/viz_explanatoria_ranking_conectividade.png",   label: "Ranking de conectividade" },
+  { src: "/out/viz_explanatoria_regioes_ordem_tamanho.png",   label: "Regiões — ordem e tamanho" },
+  { src: "/out/viz_explanatoria_regioes_densidade.png",       label: "Regiões — densidade" },
+  { src: "/out/viz_subgrafo_maior_grau.png",                  label: "Subgrafo do maior grau (GRU)" },
+  { src: "/out/arvore_percurso.png",                          label: "Árvore de percurso DFS" },
 ];
 
 export default function PageVisualizacoes() {
@@ -21,27 +21,25 @@ export default function PageVisualizacoes() {
 
       <div className="section">
         <div className="section-title">Grafo interativo (PyVis)</div>
-        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
           <button className="btn" onClick={() => setShowInteractive((v) => !v)}>
-            {showInteractive ? "Ocultar" : "Abrir grafo interativo"}
+            {showInteractive ? "Ocultar grafo" : "Abrir grafo interativo"}
           </button>
           <a
             href="/out/grafo_interativo.html"
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-outline"
-            style={{ textDecoration: "none" }}
           >
-            Abrir em nova aba
+            Nova aba →
           </a>
           <a
             href="/out/arvore_percurso.html"
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-outline"
-            style={{ textDecoration: "none" }}
           >
-            Árvore de percurso (nova aba)
+            Árvore DFS →
           </a>
         </div>
         {showInteractive && (
@@ -55,7 +53,11 @@ export default function PageVisualizacoes() {
         <div className="section-title">Gráficos estatísticos</div>
         <div className="img-grid">
           {IMAGES.map((img) => (
-            <div key={img.src} className="img-card" style={{ cursor: "zoom-in" }} onClick={() => setModal(img)}>
+            <div
+              key={img.src}
+              className="img-card"
+              onClick={() => setModal(img)}
+            >
               <img src={img.src} alt={img.label} loading="lazy" />
               <div className="img-card-label">{img.label}</div>
             </div>
@@ -67,13 +69,20 @@ export default function PageVisualizacoes() {
         <div
           onClick={() => setModal(null)}
           style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
-            display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, cursor: "zoom-out",
+            position: "fixed", inset: 0,
+            background: "rgba(4, 14, 25, 0.92)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 1000, cursor: "zoom-out",
+            backdropFilter: "blur(4px)",
           }}
         >
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
-            <img src={modal.src} alt={modal.label} style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 8 }} />
-            <div style={{ color: "rgba(255,255,255,0.6)", textAlign: "center", marginTop: 8, fontSize: 13 }}>
+            <img
+              src={modal.src}
+              alt={modal.label}
+              style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.7)" }}
+            />
+            <div style={{ color: "var(--muted)", textAlign: "center", marginTop: 10, fontSize: 13 }}>
               {modal.label} — clique fora para fechar
             </div>
           </div>

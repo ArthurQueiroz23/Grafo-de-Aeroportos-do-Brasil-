@@ -4,7 +4,7 @@ import { DataSet } from "vis-data";
 
 const AIRPORT_COORDS = {
   GRU: { x: 180, y: 120 }, CGH: { x: 170, y: 130 }, GIG: { x: 190, y: 110 },
-  SDU: { x: 195, y: 105 }, BSB: { x: 80, y: 30 }, CNF: { x: 160, y: 100 },
+  SDU: { x: 195, y: 105 }, BSB: { x: 80, y: 30 },  CNF: { x: 160, y: 100 },
   SSA: { x: 270, y: -20 }, REC: { x: 340, y: -60 }, FOR: { x: 300, y: -130 },
   NAT: { x: 360, y: -100 }, JPA: { x: 370, y: -70 }, THE: { x: 260, y: -150 },
   MAO: { x: -200, y: -120 }, BEL: { x: 0, y: -100 }, PVH: { x: -150, y: -60 },
@@ -28,7 +28,7 @@ function scaleCoords(airports) {
   });
 }
 
-export default function GrafoVis({ airports, edges, mandatoryPairs }) {
+export default function GrafoVis({ airports, edges, mandatoryPairs, highlightPath = [] }) {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
   const nodesRef = useRef(null);
@@ -46,18 +46,20 @@ export default function GrafoVis({ airports, edges, mandatoryPairs }) {
     const nodeData = scaleCoords(airports).map((a) => ({
       id: a.id,
       label: a.id,
+      title: `<div style="background:#0d1e35;border:1px solid rgba(77,163,255,0.3);border-radius:8px;padding:8px 12px;font-family:'Segoe UI',sans-serif;font-size:13px;color:#dde8f5;"><strong style="color:#4da3ff;">${a.id}</strong></div>`,
       x: a.x,
       y: a.y,
       physics: false,
       color: {
-        background: "#1f3a6e",
-        border: "#4e9af1",
-        highlight: { background: "#4e9af1", border: "#ffffff" },
-        hover: { background: "#2a4f8e", border: "#4e9af1" },
+        background: "#0d1e35",
+        border: "#4da3ff",
+        highlight: { background: "#4da3ff", border: "#ffffff" },
+        hover: { background: "#162e50", border: "#7c5cff" },
       },
-      font: { color: "#ffffff", size: 13, face: "Segoe UI" },
+      font: { color: "#dde8f5", size: 13, face: "Segoe UI" },
       shape: "ellipse",
-      size: 22,
+      size: 24,
+      borderWidth: 2,
     }));
 
     const edgeData = edges.map((e, idx) => {
@@ -68,10 +70,10 @@ export default function GrafoVis({ airports, edges, mandatoryPairs }) {
         from: e.from,
         to: e.to,
         label: String(e.weight),
-        color: { color: isMandatory ? "#e74c3c" : "#4e9af1", opacity: isMandatory ? 1 : 0.55 },
+        color: { color: isMandatory ? "#e74c3c" : "rgba(77,163,255,0.45)" },
         width: isMandatory ? 3 : 1.5,
-        arrows: { to: { enabled: true, scaleFactor: 0.7 } },
-        font: { size: 10, color: "rgba(255,255,255,0.5)", align: "middle" },
+        arrows: { to: { enabled: true, scaleFactor: 0.65 } },
+        font: { size: 10, color: "rgba(221,232,245,0.4)", align: "middle" },
         _mandatory: isMandatory,
       };
     });
@@ -80,7 +82,7 @@ export default function GrafoVis({ airports, edges, mandatoryPairs }) {
     edgesRef.current = new DataSet(edgeData);
 
     const options = {
-      interaction: { hover: true, tooltipDelay: 100, zoomView: true },
+      interaction: { hover: true, tooltipDelay: 80, zoomView: true },
       physics: false,
       layout: { randomSeed: 42 },
       edges: { smooth: { type: "curvedCW", roundness: 0.15 } },
@@ -100,12 +102,38 @@ export default function GrafoVis({ airports, edges, mandatoryPairs }) {
     };
   }, [airports, edges, mandatoryPairs]);
 
+  useEffect(() => {
+    if (!edgesRef.current) return;
+
+    const pathSet = new Set();
+    if (highlightPath && highlightPath.length > 1) {
+      for (let i = 0; i < highlightPath.length - 1; i++) {
+        pathSet.add(`${highlightPath[i]}__${highlightPath[i + 1]}`);
+        pathSet.add(`${highlightPath[i + 1]}__${highlightPath[i]}`);
+      }
+    }
+
+    const updates = edgesRef.current.get().map((e) => {
+      const inPath = pathSet.has(`${e.from}__${e.to}`) || pathSet.has(`${e.to}__${e.from}`);
+      const isMandatory = e._mandatory;
+      return {
+        id: e.id,
+        color: {
+          color: isMandatory ? "#e74c3c" : inPath ? "#f5c542" : "rgba(77,163,255,0.45)",
+        },
+        width: inPath ? 4.5 : isMandatory ? 3 : 1.5,
+      };
+    });
+
+    edgesRef.current.update(updates);
+  }, [highlightPath]);
+
   const handleSearch = () => {
     const val = searchVal.trim().toUpperCase();
     if (!val || !networkRef.current) return;
     const node = nodesRef.current && nodesRef.current.get(val);
     if (node) {
-      networkRef.current.focus(val, { scale: 2.2, animation: { duration: 600, easingFunction: "easeInOutQuad" } });
+      networkRef.current.focus(val, { scale: 2.4, animation: { duration: 600, easingFunction: "easeInOutQuad" } });
       networkRef.current.selectNodes([val]);
     }
   };
@@ -117,10 +145,7 @@ export default function GrafoVis({ airports, edges, mandatoryPairs }) {
     const updates = edgesRef.current.get().map((e) => ({
       id: e.id,
       color: {
-        color: e._mandatory
-          ? next ? "#e74c3c" : "rgba(78,154,241,0.55)"
-          : "rgba(78,154,241,0.55)",
-        opacity: e._mandatory && next ? 1 : 0.55,
+        color: e._mandatory && next ? "#e74c3c" : "rgba(77,163,255,0.45)",
       },
       width: e._mandatory && next ? 3 : 1.5,
     }));
@@ -141,7 +166,7 @@ export default function GrafoVis({ airports, edges, mandatoryPairs }) {
         <button className="btn btn-outline" onClick={handleToggleRoutes}>
           {routesOn ? "Ocultar rotas" : "Mostrar rotas"}
         </button>
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginLeft: 6 }}>
+        <span style={{ fontSize: 11, color: "rgba(221,232,245,0.3)", marginLeft: 4 }}>
           Arestas vermelhas = rotas obrigatórias (MAO→GRU, REC→POA)
         </span>
       </div>

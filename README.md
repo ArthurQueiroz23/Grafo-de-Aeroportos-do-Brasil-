@@ -2,10 +2,44 @@
 
 Projeto acadêmico dividido em duas partes:
 
-* **Parte 1:** modelagem de uma rede de aeroportos brasileiros usando um grafo não direcionado, com métricas, Dijkstra, visualizações estáticas/interativas e dashboard em Streamlit.
+* **Parte 1:** modelagem de uma rede de aeroportos brasileiros usando um grafo não direcionado, com métricas, Dijkstra, visualizações estáticas/interativas e frontend em React.
 * **Parte 2:** análise da rede rodoviária SNAP roadNet-CA usando grafo dirigido, comparando Bellman–Ford e Dijkstra em problemas de caminhos mínimos.
 
 Todos os algoritmos principais foram implementados manualmente, sem uso de `networkx`, `igraph` ou bibliotecas equivalentes.
+
+---
+
+# Como rodar
+
+## 1. Instalar dependências Python
+
+```bash
+pip install -r requirements.txt
+```
+
+## 2. Gerar os dados
+
+Execute na raiz do projeto (com o `.venv` ativado):
+
+```bash
+# Parte 1 — métricas + rotas + visualizações
+python -m src.cli tudo
+
+# Parte 2 — SNAP
+python -m src.cli parte2
+```
+
+Isso cria a pasta `out/` com todos os arquivos que o frontend consome.
+
+## 3. Rodar o frontend React
+
+```bash
+cd frontend
+npm install   # apenas na primeira vez
+npm run dev
+```
+
+Acesse em: **http://localhost:5173**
 
 ---
 
@@ -15,7 +49,9 @@ Todos os algoritmos principais foram implementados manualmente, sem uso de `netw
 * Pandas
 * Matplotlib
 * PyVis
-* Streamlit
+* React 18 + Vite
+* vis-network
+* lucide-react
 
 ---
 
@@ -45,9 +81,17 @@ GRAFO-DE-AEROPORTOS-DO-BRASIL/
 │   ├── snap_road.py
 │   └── viz.py
 │
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── App.jsx
+│   │   └── App.css
+│   ├── package.json
+│   └── vite.config.js
+│
 ├── tests/
 │
-├── app.py
 ├── requirements.txt
 └── README.md
 ```
@@ -79,7 +123,7 @@ O sistema:
 * gera ego-redes;
 * executa Dijkstra para caminhos mínimos;
 * cria visualizações estáticas e interativas;
-* disponibiliza um dashboard em Streamlit.
+* disponibiliza um frontend interativo em React.
 
 ---
 
@@ -174,43 +218,70 @@ Gera:
 
 ---
 
-# 6. Dashboard Streamlit
+# 6. Frontend React
 
-O projeto possui uma interface web interativa feita com Streamlit.
+O projeto possui uma interface web interativa feita com React + Vite.
 
-## Executar o dashboard
+## Executar o frontend
 
 ```bash
-streamlit run app.py
+cd frontend
+npm install   # apenas na primeira vez
+npm run dev
 ```
 
----
+Acesse em **http://localhost:5173**
 
-## Funcionalidades do dashboard
-
-### Página de Métricas
-
-Exibe:
-
-* ordem;
-* tamanho;
-* densidade;
-* métricas por região;
-* ego-redes;
-* ranking de conectividade.
+> Os arquivos da pasta `out/` precisam existir antes de abrir o frontend. Gere-os com `python -m src.cli tudo` e `python -m src.cli parte2`.
 
 ---
 
-### Página de Rotas
+## Páginas disponíveis
 
-Calcula o menor caminho entre aeroportos usando Dijkstra.
+### Visão Geral
+
+Exibe KPIs globais (ordem, tamanho, densidade, hub principal) e o grafo interativo completo com rotas obrigatórias destacadas.
+
+---
+
+### Métricas
+
+Exibe em abas:
+
+* subgrafos por região com cards coloridos;
+* ego-redes por aeroporto;
+* ranking de conectividade com barras em gradiente.
+
+---
+
+### Calculadora de Rotas
+
+Calcula o menor caminho entre aeroportos usando Dijkstra (implementado em JavaScript).
 
 Mostra:
 
 * custo total;
 * quantidade de arestas;
 * paradas intermediárias;
-* visualização do caminho no grafo interativo.
+* rota destacada em dourado no grafo interativo.
+
+---
+
+### Rotas
+
+Lista todas as rotas calculadas (Dijkstra / Bellman-Ford) com destaque para as obrigatórias (MAO→GRU, REC→POA).
+
+---
+
+### Visualizações
+
+Exibe os gráficos PNG gerados pelo Python e permite abrir o grafo interativo PyVis em iframe.
+
+---
+
+### Parte 2 — SNAP
+
+Exibe métricas do subgrafo SNAP, comparação BF × Dijkstra e demos de ciclo negativo.
 
 ---
 
@@ -372,7 +443,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 * O projeto NÃO utiliza `networkx` ou `igraph` para algoritmos.
 * O dataset SNAP não possui distâncias reais.
 * O modo `synthetic_km` cria pesos positivos sintéticos apenas para fins acadêmicos.
-* O dashboard Streamlit depende dos arquivos previamente gerados em `out/`.
+* O frontend React depende dos arquivos previamente gerados em `out/` pelos scripts Python.
 
 ---
 
@@ -388,7 +459,10 @@ roadNet-CA:
 
 ## Bibliotecas
 
-* [Streamlit]
+* [React](https://react.dev)
+* [Vite](https://vitejs.dev)
+* [vis-network](https://visjs.github.io/vis-network/)
+* [lucide-react](https://lucide.dev)
 * [PyVis]
 * [Matplotlib]
 * [Pandas]

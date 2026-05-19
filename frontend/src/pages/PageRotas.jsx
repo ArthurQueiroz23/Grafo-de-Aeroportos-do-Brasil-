@@ -20,6 +20,8 @@ export default function PageRotas() {
     fetch("/out/graus.csv").then((r) => r.text()).then((t) => setGraus(parseCSV(t)));
   }, []);
 
+  const maxGrau = graus.length > 0 ? Math.max(...graus.map((g) => parseInt(g.grau))) : 1;
+
   return (
     <div>
       <div className="page-title">Rotas</div>
@@ -45,14 +47,14 @@ export default function PageRotas() {
                 <tr key={i}>
                   <td><span className="badge badge-blue">{r.origem}</span></td>
                   <td><span className="badge badge-blue">{r.destino}</span></td>
-                  <td style={{ fontWeight: 600, color: "#4e9af1" }}>{r.custo}</td>
-                  <td style={{ fontFamily: "monospace", fontSize: 12, color: "#a0b4cc" }}>
+                  <td style={{ fontWeight: 700, color: "var(--blue)" }}>{r.custo}</td>
+                  <td style={{ fontFamily: "monospace", fontSize: 12, color: "rgba(221,232,245,0.65)" }}>
                     {r.caminho}
                   </td>
                   <td>
                     {isObrig
                       ? <span className="badge badge-red">Obrigatória</span>
-                      : <span className="badge" style={{ background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.5)" }}>Adicional</span>}
+                      : <span className="badge" style={{ background: "rgba(255,255,255,0.05)", color: "var(--muted)" }}>Adicional</span>}
                   </td>
                 </tr>
               );
@@ -63,35 +65,27 @@ export default function PageRotas() {
 
       <div className="section">
         <div className="section-title">Graus dos aeroportos</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Aeroporto</th>
-              <th>Grau</th>
-              <th>Relevância</th>
-            </tr>
-          </thead>
-          <tbody>
-            {graus.map((g, i) => {
-              const grau = parseInt(g.grau);
-              return (
-                <tr key={i}>
-                  <td><span className="badge badge-blue">{g.aeroporto}</span></td>
-                  <td style={{ fontWeight: 600 }}>{grau}</td>
-                  <td>
-                    <div style={{
-                      borderRadius: 4,
-                      height: 8,
-                      width: `${Math.min(100, (grau / 6) * 100)}%`,
-                      minWidth: 8,
-                      background: `rgba(78,154,241,${0.2 + (grau / 6) * 0.8})`,
-                    }} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+          {graus.map((g, i) => {
+            const grau = parseInt(g.grau);
+            const pct = Math.min(100, (grau / maxGrau) * 100);
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ width: 36, fontSize: 12, color: "var(--text)", fontFamily: "monospace", fontWeight: 700 }}>
+                  {g.aeroporto}
+                </span>
+                <div className="rank-bar-track">
+                  <div
+                    className="rank-bar-fill"
+                    style={{ width: `${pct}%`, opacity: 0.6 + (pct / 100) * 0.4 }}
+                  >
+                    {grau}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

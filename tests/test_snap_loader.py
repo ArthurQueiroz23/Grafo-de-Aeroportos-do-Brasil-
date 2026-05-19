@@ -27,8 +27,9 @@ class TestSnapLoader(unittest.TestCase):
                 weight_mode="unit",
             )
 
+            num_edges = sum(len(v) for v in g.values())
             self.assertGreaterEqual(meta["vertices_subgrafo"], 3)
-            self.assertGreaterEqual(g.num_edges(), 3)
+            self.assertGreaterEqual(num_edges, 3)
 
 
 if __name__ == "__main__":

@@ -27,6 +27,18 @@ class Grafo:
     def neighbors(self, u):
         return self.adj.get(u, {}).items()
 
+    def __iter__(self):
+        return iter(self.adj)
+
+    def __contains__(self, item):
+        return item in self.adj
+
+    def __getitem__(self, item):
+        return self.adj[item]
+
+    def keys(self):
+        return self.adj.keys()
+
 
 class DiGrafo:
     def __init__(self):
@@ -43,6 +55,18 @@ class DiGrafo:
 
     def neighbors(self, u):
         return self.adj.get(u, {}).items()
+
+    def __iter__(self):
+        return iter(self.adj)
+
+    def __contains__(self, item):
+        return item in self.adj
+
+    def __getitem__(self, item):
+        return self.adj[item]
+
+    def keys(self):
+        return self.adj.keys()
 
 
 class TestBellmanFord(unittest.TestCase):

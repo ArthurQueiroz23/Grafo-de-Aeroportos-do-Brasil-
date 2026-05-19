@@ -2,12 +2,10 @@ import { useEffect, useState } from "react";
 
 export default function PageParte2() {
   const [report, setReport] = useState(null);
-  const [metricas, setMetricas] = useState(null);
   const [cmpRows, setCmpRows] = useState([]);
 
   useEffect(() => {
     fetch("/out/parte2_report.json").then((r) => r.json()).then(setReport);
-    fetch("/out/parte2/subgrafo_metricas.json").then((r) => r.json()).then(setMetricas);
     fetch("/out/parte2/comparacao_bf_dijkstra.csv")
       .then((r) => r.text())
       .then((text) => {
@@ -49,7 +47,7 @@ export default function PageParte2() {
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Densidade dirigida</div>
-          <div className="kpi-value">{sub ? (sub.densidade_dirigida * 100).toFixed(4) : "—"}</div>
+          <div className="kpi-value">{sub ? (sub.densidade_dirigida * 100).toFixed(3) : "—"}</div>
           <div className="kpi-unit">%</div>
         </div>
         <div className="kpi-card">
@@ -58,7 +56,7 @@ export default function PageParte2() {
           <div className="kpi-unit">origem–destino</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Coincidências BF = Dij.</div>
+          <div className="kpi-label">BF = Dijkstra</div>
           <div className="kpi-value">{bf?.coincidencias_com_dijkstra ?? "—"}</div>
           <div className="kpi-unit">de {bf?.pares_avaliados ?? "—"} pares</div>
         </div>
@@ -73,7 +71,9 @@ export default function PageParte2() {
           </div>
           <div className="info-row">
             <span className="info-key">Tempo total</span>
-            <span className="info-val">{dij?.tempo_total_s?.toFixed(4) ?? "—"} s</span>
+            <span className="info-val" style={{ color: "var(--blue)", fontWeight: 700 }}>
+              {dij?.tempo_total_s?.toFixed(4) ?? "—"} s
+            </span>
           </div>
           <div className="info-row">
             <span className="info-key">Tempo médio por fonte</span>
@@ -88,7 +88,9 @@ export default function PageParte2() {
           </div>
           <div className="info-row">
             <span className="info-key">Tempo total</span>
-            <span className="info-val">{bf?.tempo_total_s?.toFixed(4) ?? "—"} s</span>
+            <span className="info-val" style={{ color: "var(--purple)", fontWeight: 700 }}>
+              {bf?.tempo_total_s?.toFixed(4) ?? "—"} s
+            </span>
           </div>
           <div className="info-row">
             <span className="info-key">Tempo médio por fonte</span>
@@ -101,8 +103,8 @@ export default function PageParte2() {
         <div className="section">
           <div className="section-title">BFS — resultados por fonte</div>
           {bfsArr.map((b, i) => (
-            <div key={i} style={{ marginBottom: 12 }}>
-              <div style={{ fontWeight: 600, color: "#4e9af1", marginBottom: 4, fontSize: 13 }}>
+            <div key={i} style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, color: "var(--blue)", marginBottom: 6, fontSize: 13 }}>
                 Fonte: {b.fonte}
               </div>
               <div className="info-row">
@@ -113,8 +115,8 @@ export default function PageParte2() {
                 <span className="info-key">Camadas</span>
                 <span className="info-val">{Object.keys(b.camadas || {}).length}</span>
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>
-                Amostra: {(b.amostra_bfs || []).slice(0, 5).join(", ")}…
+              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, fontFamily: "monospace" }}>
+                {(b.amostra_bfs || []).slice(0, 5).join(", ")}…
               </div>
             </div>
           ))}
@@ -122,16 +124,16 @@ export default function PageParte2() {
         <div className="section">
           <div className="section-title">DFS — resultados por fonte</div>
           {dfsArr.map((d, i) => (
-            <div key={i} style={{ marginBottom: 12 }}>
-              <div style={{ fontWeight: 600, color: "#4e9af1", marginBottom: 4, fontSize: 13 }}>
+            <div key={i} style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, color: "var(--purple)", marginBottom: 6, fontSize: 13 }}>
                 Fonte: {d.fonte}
               </div>
               <div className="info-row">
                 <span className="info-key">Nós visitados</span>
                 <span className="info-val">{d.nos_visitados?.toLocaleString()}</span>
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>
-                Amostra: {(d.amostra_dfs || []).slice(0, 5).join(", ")}…
+              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, fontFamily: "monospace" }}>
+                {(d.amostra_dfs || []).slice(0, 5).join(", ")}…
               </div>
             </div>
           ))}
@@ -141,7 +143,7 @@ export default function PageParte2() {
       <div className="two-col">
         <div className="section">
           <div className="section-title">Demo BF — peso negativo sem ciclo</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>
             Arestas: {(demoNeg?.arestas || []).map(([u, v, w]) => `${u}→${v}(${w})`).join(", ")}
           </div>
           {Object.entries(demoNeg?.distancias_de_0 || {}).map(([k, v]) => (
@@ -161,7 +163,7 @@ export default function PageParte2() {
         </div>
         <div className="section">
           <div className="section-title">Demo BF — ciclo negativo detectado</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>
             Arestas: {(demoCiclo?.arestas || []).map(([u, v, w]) => `${u}→${v}(${w})`).join(", ")}
           </div>
           <div className="info-row">
@@ -172,7 +174,7 @@ export default function PageParte2() {
               </span>
             </span>
           </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 12 }}>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 14, lineHeight: 1.6 }}>
             Ciclo: 1→2(−2), 2→1(0.5) — soma = −1.5 por iteração
           </div>
         </div>
@@ -194,11 +196,13 @@ export default function PageParte2() {
           <tbody>
             {cmpRows.map((r, i) => (
               <tr key={i}>
-                <td>{r.origem}</td>
-                <td>{r.destino}</td>
+                <td style={{ fontFamily: "monospace" }}>{r.origem}</td>
+                <td style={{ fontFamily: "monospace" }}>{r.destino}</td>
                 <td>{parseFloat(r.distancia_bellman_ford).toFixed(2)}</td>
                 <td>{parseFloat(r.distancia_dijkstra).toFixed(2)}</td>
-                <td>{parseFloat(r.diferenca_abs || 0).toExponential(2)}</td>
+                <td style={{ color: "var(--muted)", fontFamily: "monospace", fontSize: 11 }}>
+                  {parseFloat(r.diferenca_abs || 0).toExponential(2)}
+                </td>
                 <td>
                   <span className={`badge ${r.coincide === "True" ? "badge-green" : "badge-red"}`}>
                     {r.coincide === "True" ? "Sim" : "Não"}
@@ -212,7 +216,11 @@ export default function PageParte2() {
 
       <div className="section">
         <div className="section-title">Distribuição do grau de saída (subgrafo SNAP)</div>
-        <img src="/out/parte2/viz_parte2_grau_saida.png" alt="Distribuição grau saída" style={{ maxWidth: "100%", borderRadius: 6 }} />
+        <img
+          src="/out/parte2/viz_parte2_grau_saida.png"
+          alt="Distribuição grau saída"
+          style={{ maxWidth: "100%", borderRadius: 8 }}
+        />
       </div>
     </div>
   );

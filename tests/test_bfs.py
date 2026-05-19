@@ -27,6 +27,18 @@ class Grafo:
     def vertices(self):
         return list(self.adj.keys())
 
+    def __iter__(self):
+        return iter(self.adj)
+
+    def __contains__(self, item):
+        return item in self.adj
+
+    def __getitem__(self, item):
+        return self.adj[item]
+
+    def keys(self):
+        return self.adj.keys()
+
 
 class TestBFS(unittest.TestCase):
 

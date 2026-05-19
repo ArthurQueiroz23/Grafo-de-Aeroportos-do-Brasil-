@@ -36,6 +36,18 @@ class Grafo:
         # divide pq salvou dos 2 lados
         return total // 2
 
+    def __iter__(self):
+        return iter(self.adj)
+
+    def __contains__(self, item):
+        return item in self.adj
+
+    def __getitem__(self, item):
+        return self.adj[item]
+
+    def keys(self):
+        return self.adj.keys()
+
 
 class TestDFS(unittest.TestCase):
 

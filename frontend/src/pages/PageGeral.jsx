@@ -65,29 +65,33 @@ export default function PageGeral() {
 
       <div className="kpi-grid">
         <div className="kpi-card">
-          <div className="kpi-label">Aeroportos (vértices)</div>
+          <div className="kpi-label">Aeroportos</div>
           <div className="kpi-value">{global?.ordem ?? "—"}</div>
-          <div className="kpi-unit">nós</div>
+          <div className="kpi-unit">vértices</div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-label">Rotas (arestas)</div>
+          <div className="kpi-label">Rotas</div>
           <div className="kpi-value">{global?.tamanho ?? "—"}</div>
-          <div className="kpi-unit">conexões</div>
+          <div className="kpi-unit">arestas</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Densidade</div>
-          <div className="kpi-value">{global ? (global.densidade * 100).toFixed(2) : "—"}</div>
+          <div className="kpi-value">{global ? (global.densidade * 100).toFixed(1) : "—"}</div>
           <div className="kpi-unit">%</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Hub principal</div>
-          <div className="kpi-value" style={{ fontSize: 22 }}>{rankings?.maior_grau?.aeroporto ?? "—"}</div>
+          <div className="kpi-value" style={{ fontSize: 22 }}>
+            {rankings?.maior_grau?.aeroporto ?? "—"}
+          </div>
           <div className="kpi-unit">grau {rankings?.maior_grau?.grau}</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-label">Ego mais denso</div>
-          <div className="kpi-value" style={{ fontSize: 22 }}>{rankings?.maior_densidade_ego?.aeroporto ?? "—"}</div>
-          <div className="kpi-unit">dens. = {rankings?.maior_densidade_ego?.densidade_ego?.toFixed(2)}</div>
+          <div className="kpi-value" style={{ fontSize: 22 }}>
+            {rankings?.maior_densidade_ego?.aeroporto ?? "—"}
+          </div>
+          <div className="kpi-unit">dens. {rankings?.maior_densidade_ego?.densidade_ego?.toFixed(2)}</div>
         </div>
       </div>
 
@@ -100,7 +104,7 @@ export default function PageGeral() {
             mandatoryPairs={graphData.mandatoryPairs}
           />
         ) : (
-          <div style={{ color: "rgba(255,255,255,0.3)", padding: 60, textAlign: "center" }}>
+          <div style={{ color: "var(--muted)", padding: "60px 0", textAlign: "center", fontSize: 13 }}>
             Carregando grafo…
           </div>
         )}
