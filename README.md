@@ -124,6 +124,25 @@ Gera:
 ```bash
 python -m src.cli rotas
 ```
+Também é possível filtrar rotas específicas:
+
+### Filtrar por origem
+
+```bash
+python -m src.cli rotas --origem REC
+```
+
+### Filtrar por destino
+
+```bash
+python -m src.cli rotas --destino GRU
+```
+
+### Filtrar origem e destino
+
+```bash
+python -m src.cli rotas --origem REC --destino GRU
+```
 
 Lê:
 
