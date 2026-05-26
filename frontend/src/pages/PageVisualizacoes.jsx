@@ -1,13 +1,12 @@
 import { useState } from "react";
 
 const IMAGES = [
-  { src: "/out/viz_exploratoria_distribuicao_graus.png",      label: "Distribuição de graus" },
-  { src: "/out/viz_exploratoria_bfs_camadas.png",             label: "Camadas BFS" },
-  { src: "/out/viz_explanatoria_ranking_conectividade.png",   label: "Ranking de conectividade" },
-  { src: "/out/viz_explanatoria_regioes_ordem_tamanho.png",   label: "Regiões — ordem e tamanho" },
-  { src: "/out/viz_explanatoria_regioes_densidade.png",       label: "Regiões — densidade" },
-  { src: "/out/viz_subgrafo_maior_grau.png",                  label: "Subgrafo do maior grau (GRU)" },
-  { src: "/out/arvore_percurso.png",                          label: "Árvore de percurso DFS" },
+  { src: "/out/viz_distribuicao_graus.png",   label: "Distribuição de graus",        cat: "Exploratória",  catColor: "#4da3ff" },
+  { src: "/out/viz_bfs_camadas.png",          label: "Camadas BFS",                  cat: "Exploratória",  catColor: "#4da3ff" },
+  { src: "/out/viz_ranking_graus.png",        label: "Ranking de conectividade",     cat: "Explanatória",  catColor: "#7c5cff" },
+  { src: "/out/viz_regioes_metricas.png",     label: "Regiões — ordem e tamanho",    cat: "Explanatória",  catColor: "#7c5cff" },
+  { src: "/out/viz_regioes_densidade.png",    label: "Regiões — densidade",          cat: "Explanatória",  catColor: "#7c5cff" },
+  { src: "/out/viz_subgrafo_maior_grau.png",  label: "Subgrafo do maior grau (GRU)", cat: "Explanatória",  catColor: "#f5c542" },
 ];
 
 export default function PageVisualizacoes() {
@@ -51,6 +50,23 @@ export default function PageVisualizacoes() {
 
       <div className="section">
         <div className="section-title">Gráficos estatísticos</div>
+        <div style={{ display: "flex", gap: 14, marginBottom: 16, flexWrap: "wrap" }}>
+          {[
+            { cat: "Exploratória",  color: "#4da3ff", desc: "O que os dados revelam por conta própria" },
+            { cat: "Explanatória",  color: "#7c5cff", desc: "Confirma hipóteses e comunica insights" },
+          ].map((c) => (
+            <div key={c.cat} style={{
+              display: "flex", alignItems: "center", gap: 8,
+              background: `${c.color}12`,
+              border: `1px solid ${c.color}30`,
+              borderRadius: 8, padding: "6px 14px",
+            }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: c.color, display: "inline-block", flexShrink: 0 }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: c.color }}>{c.cat}</span>
+              <span style={{ fontSize: 11, color: "var(--muted)" }}>— {c.desc}</span>
+            </div>
+          ))}
+        </div>
         <div className="img-grid">
           {IMAGES.map((img) => (
             <div
@@ -59,7 +75,21 @@ export default function PageVisualizacoes() {
               onClick={() => setModal(img)}
             >
               <img src={img.src} alt={img.label} loading="lazy" />
-              <div className="img-card-label">{img.label}</div>
+              <div className="img-card-label" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span>{img.label}</span>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: img.catColor,
+                  background: `${img.catColor}18`,
+                  border: `1px solid ${img.catColor}30`,
+                  borderRadius: 10,
+                  padding: "2px 8px",
+                  whiteSpace: "nowrap",
+                }}>
+                  {img.cat}
+                </span>
+              </div>
             </div>
           ))}
         </div>

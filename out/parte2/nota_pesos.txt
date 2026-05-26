@@ -1,3 +1,0 @@
-roadNet-CA (SNAP) nao fornece distancia geodesica por aresta.
-Modo 'unit': peso 1 (contagem de arestas).
-Modo 'synthetic_km': peso positivo sintetico derivado dos ids (comparavel entre algoritmos, nao e km real).

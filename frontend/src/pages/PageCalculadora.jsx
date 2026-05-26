@@ -68,18 +68,35 @@ export default function PageCalculadora() {
   const [airports, setAirports] = useState([]);
   const [origem, setOrigem] = useState("REC");
   const [destino, setDestino] = useState("POA");
+  const [regionMap, setRegionMap] = useState({});
+  const [grauMap, setGrauMap] = useState({});
 
   useEffect(() => {
     fetch("/data/adjacencias_aeroportos.csv")
       .then((r) => r.text())
       .then((t) => setAdjRows(parseAdjCSV(t)));
 
-    fetch("/data/aeroportos_data.csv")
-      .then((r) => r.text())
-      .then((t) => {
-        const lines = t.trim().split("\n").slice(1);
-        setAirports(lines.map((l) => ({ id: l.split(",")[0].trim() })));
+    Promise.all([
+      fetch("/data/aeroportos_data.csv").then((r) => r.text()),
+      fetch("/out/graus.csv").then((r) => r.text()),
+    ]).then(([aerText, grausText]) => {
+      const aerLines = aerText.trim().split("\n").slice(1);
+      const rMap = {};
+      aerLines.forEach((l) => {
+        const parts = l.split(",");
+        if (parts[0] && parts[2]) rMap[parts[0].trim()] = parts[2].trim();
       });
+      setRegionMap(rMap);
+      setAirports(aerLines.map((l) => ({ id: l.split(",")[0].trim() })));
+
+      const grausLines = grausText.trim().split("\n").slice(1);
+      const gMap = {};
+      grausLines.forEach((l) => {
+        const parts = l.split(",");
+        if (parts[0] && parts[1]) gMap[parts[0].trim()] = parseInt(parts[1].trim()) || 1;
+      });
+      setGrauMap(gMap);
+    });
   }, []);
 
   const graph = useMemo(() => buildGraph(adjRows), [adjRows]);
@@ -202,6 +219,8 @@ export default function PageCalculadora() {
             airports={airports}
             edges={edges}
             highlightPath={resultado?.path ?? []}
+            regionMap={regionMap}
+            grauMap={grauMap}
           />
         </div>
       )}
