@@ -1,9 +1,37 @@
 import { useEffect, useState } from "react";
+import { Microscope, Terminal } from "lucide-react";
+import PageHeader from "../components/ui/PageHeader.jsx";
+import Badge from "../components/ui/Badge.jsx";
+import Modal from "../components/ui/Modal.jsx";
+import EmptyState from "../components/ui/EmptyState.jsx";
+import { LoadingCenter, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
+import { CHART } from "../constants/theme.js";
+
+const VIZ_IMAGES = [
+  {
+    src: "/out/parte2/viz_parte2_grau_saida.png",
+    label: "Distribuição do grau de saída",
+    cat: "Exploratória",
+    variant: "accent",
+  },
+  {
+    src: "/out/parte2/viz_parte2_bfs_camadas.png",
+    label: "Camadas BFS (subgrafo SNAP)",
+    cat: "Exploratória",
+    variant: "accent",
+  },
+];
 
 function TimeBarchart({ label, dijVal, bfVal, gradId }) {
   if (dijVal == null || bfVal == null) return null;
-  const W = 240, H = 170, PL = 52, PT = 18, PR = 16, PB = 42;
-  const plotW = W - PL - PR, plotH = H - PT - PB;
+  const W = 260,
+    H = 190,
+    PL = 56,
+    PT = 20,
+    PR = 18,
+    PB = 46;
+  const plotW = W - PL - PR;
+  const plotH = H - PT - PB;
   const maxVal = Math.max(dijVal, bfVal) * 1.2 || 1;
   const barW = plotW * 0.26;
   const gap = plotW * 0.08;
@@ -12,17 +40,33 @@ function TimeBarchart({ label, dijVal, bfVal, gradId }) {
   const bfH = (bfVal / maxVal) * plotH;
 
   return (
-    <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", marginBottom: 4, fontWeight: 600 }}>
+    <div style={{ flex: 1, minWidth: 220 }}>
+      <div
+        style={{
+          fontSize: "var(--text-caption)",
+          color: "var(--color-text-muted)",
+          textAlign: "center",
+          marginBottom: "var(--space-2)",
+          fontWeight: 600,
+        }}
+      >
         {label}
       </div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ fontFamily: "Segoe UI, sans-serif", overflow: "visible" }}>
+      <svg
+        width="100%"
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ fontFamily: "var(--font-body)", overflow: "visible" }}
+        role="img"
+        aria-label={label}
+      >
         <defs>
           <linearGradient id={`dg_${gradId}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4da3ff" /><stop offset="100%" stopColor="#2a7ad4" />
+            <stop offset="0%" stopColor={CHART.dijkstra} />
+            <stop offset="100%" stopColor="#b8862a" />
           </linearGradient>
           <linearGradient id={`bg_${gradId}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#7c5cff" /><stop offset="100%" stopColor="#5a3dcf" />
+            <stop offset="0%" stopColor={CHART.bellmanFord} />
+            <stop offset="100%" stopColor="#2d7a72" />
           </linearGradient>
         </defs>
         {[0, 0.25, 0.5, 0.75, 1.0].map((frac) => {
@@ -30,35 +74,93 @@ function TimeBarchart({ label, dijVal, bfVal, gradId }) {
           const v = frac * maxVal;
           return (
             <g key={frac}>
-              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="rgba(255,255,255,0.06)" />
+              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke={CHART.grid} />
               {frac > 0 && (
-                <text x={PL - 4} y={y + 4} textAnchor="end" fontSize={9} fill="rgba(221,232,245,0.38)">
+                <text
+                  x={PL - 4}
+                  y={y + 4}
+                  textAnchor="end"
+                  fontSize={11}
+                  fill={CHART.label}
+                >
                   {v < 0.001 ? v.toExponential(1) : v.toFixed(3)}
                 </text>
               )}
             </g>
           );
         })}
-        <rect x={cx - barW - gap / 2} y={PT + plotH - dijH} width={barW} height={dijH}
-          fill={`url(#dg_${gradId})`} rx={3} />
-        <text x={cx - barW / 2 - gap / 2} y={PT + plotH - dijH - 5} textAnchor="middle" fontSize={9} fill="#4da3ff">
+        <rect
+          x={cx - barW - gap / 2}
+          y={PT + plotH - dijH}
+          width={barW}
+          height={dijH}
+          fill={`url(#dg_${gradId})`}
+          rx={3}
+        />
+        <text
+          x={cx - barW / 2 - gap / 2}
+          y={PT + plotH - dijH - 5}
+          textAnchor="middle"
+          fontSize={11}
+          fill={CHART.dijkstra}
+        >
           {dijVal.toFixed(4)}
         </text>
-        <text x={cx - barW / 2 - gap / 2} y={PT + plotH + 14} textAnchor="middle" fontSize={10} fill="#4da3ff" fontWeight="700">
+        <text
+          x={cx - barW / 2 - gap / 2}
+          y={PT + plotH + 16}
+          textAnchor="middle"
+          fontSize={12}
+          fill={CHART.dijkstra}
+          fontWeight="700"
+        >
           Dijkstra
         </text>
-        <rect x={cx + gap / 2} y={PT + plotH - bfH} width={barW} height={bfH}
-          fill={`url(#bg_${gradId})`} rx={3} />
-        <text x={cx + barW / 2 + gap / 2} y={PT + plotH - bfH - 5} textAnchor="middle" fontSize={9} fill="#7c5cff">
+        <rect
+          x={cx + gap / 2}
+          y={PT + plotH - bfH}
+          width={barW}
+          height={bfH}
+          fill={`url(#bg_${gradId})`}
+          rx={3}
+        />
+        <text
+          x={cx + barW / 2 + gap / 2}
+          y={PT + plotH - bfH - 5}
+          textAnchor="middle"
+          fontSize={11}
+          fill={CHART.bellmanFord}
+        >
           {bfVal.toFixed(4)}
         </text>
-        <text x={cx + barW / 2 + gap / 2} y={PT + plotH + 14} textAnchor="middle" fontSize={10} fill="#7c5cff" fontWeight="700">
-          BF
+        <text
+          x={cx + barW / 2 + gap / 2}
+          y={PT + plotH + 16}
+          textAnchor="middle"
+          fontSize={12}
+          fill={CHART.bellmanFord}
+          fontWeight="700"
+        >
+          Bellman-Ford
         </text>
-        <line x1={PL} y1={PT} x2={PL} y2={PT + plotH} stroke="rgba(255,255,255,0.15)" />
-        <line x1={PL} y1={PT + plotH} x2={W - PR} y2={PT + plotH} stroke="rgba(255,255,255,0.15)" />
-        <text x={12} y={PT + plotH / 2} textAnchor="middle" fontSize={9} fill="rgba(221,232,245,0.38)"
-          transform={`rotate(-90, 12, ${PT + plotH / 2})`}>segundos</text>
+        <line x1={PL} y1={PT} x2={PL} y2={PT + plotH} stroke={CHART.axis} />
+        <line
+          x1={PL}
+          y1={PT + plotH}
+          x2={W - PR}
+          y2={PT + plotH}
+          stroke={CHART.axis}
+        />
+        <text
+          x={12}
+          y={PT + plotH / 2}
+          textAnchor="middle"
+          fontSize={11}
+          fill={CHART.label}
+          transform={`rotate(-90, 12, ${PT + plotH / 2})`}
+        >
+          segundos
+        </text>
       </svg>
     </div>
   );
@@ -68,11 +170,19 @@ export default function PageParte2() {
   const [sub, setSub] = useState(null);
   const [cmpRows, setCmpRows] = useState([]);
   const [timing, setTiming] = useState(null);
+  const [exploracao, setExploracao] = useState(null);
+  const [modal, setModal] = useState(null);
+  const [vizDisponiveis, setVizDisponiveis] = useState(null);
 
   useEffect(() => {
     fetch("/out/parte2/subgrafo_metricas.json")
       .then((r) => r.json())
       .then(setSub)
+      .catch(() => {});
+
+    fetch("/out/parte2/exploracao_bfs_dfs.json")
+      .then((r) => r.json())
+      .then(setExploracao)
       .catch(() => {});
 
     fetch("/out/parte2/comparacao_bf_dijkstra.csv")
@@ -84,14 +194,18 @@ export default function PageParte2() {
         const rows = lines.map((l) => {
           const vals = l.split(",");
           const obj = {};
-          keys.forEach((k, i) => { obj[k] = vals[i] ? vals[i].trim() : ""; });
+          keys.forEach((k, i) => {
+            obj[k] = vals[i] ? vals[i].trim() : "";
+          });
           return obj;
         });
         setCmpRows(rows.slice(0, 20));
 
-        // Aggregate timing by unique source (each source = one BF/Dijkstra run)
         const seenSrc = new Set();
-        let tBfTotal = 0, tDjTotal = 0, srcCount = 0, coincidencias = 0;
+        let tBfTotal = 0,
+          tDjTotal = 0,
+          srcCount = 0,
+          coincidencias = 0;
         rows.forEach((r) => {
           if (!seenSrc.has(r.origem)) {
             seenSrc.add(r.origem);
@@ -105,59 +219,183 @@ export default function PageParte2() {
           fontes: srcCount,
           pares: rows.length,
           coincidencias,
-          dijkstra: { total: tDjTotal, medio: srcCount > 0 ? tDjTotal / srcCount : 0 },
-          bf: { total: tBfTotal, medio: srcCount > 0 ? tBfTotal / srcCount : 0 },
+          dijkstra: {
+            total: tDjTotal,
+            medio: srcCount > 0 ? tDjTotal / srcCount : 0,
+          },
+          bf: {
+            total: tBfTotal,
+            medio: srcCount > 0 ? tBfTotal / srcCount : 0,
+          },
         });
       })
       .catch(() => {});
+
+    Promise.all(
+      VIZ_IMAGES.map((img) =>
+        fetch(img.src, { method: "HEAD" })
+          .then((r) => (r.ok ? img : null))
+          .catch(() => null)
+      )
+    ).then((found) => setVizDisponiveis(found.filter(Boolean)));
   }, []);
 
   const dij = timing?.dijkstra;
   const bf = timing?.bf;
 
   return (
-    <div>
-      <div className="page-title">Parte 2 — SNAP RoadNet-CA</div>
-      <div className="page-subtitle">Análise do subgrafo de estradas da Califórnia (SNAP)</div>
+    <div className="page-parte2">
+      <PageHeader
+        eyebrow="SNAP RoadNet-CA"
+        title="Parte 2 — SNAP RoadNet-CA"
+        subtitle="Análise do subgrafo de estradas da Califórnia: benchmarking Dijkstra × Bellman-Ford e exploração BFS/DFS."
+      />
 
-      <div className="kpi-grid">
-        <div className="kpi-card">
-          <div className="kpi-label">Vértices (subgrafo)</div>
-          <div className="kpi-value">{sub?.ordem?.toLocaleString() ?? "—"}</div>
-          <div className="kpi-unit">nós</div>
+      {!sub ? (
+        <SkeletonKpiGrid count={5} />
+      ) : (
+        <div className="kpi-grid">
+          <div className="kpi-card">
+            <div className="kpi-label">Vértices (subgrafo)</div>
+            <div className="kpi-value">{sub?.ordem?.toLocaleString() ?? "—"}</div>
+            <div className="kpi-unit">nós</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Arestas dirigidas</div>
+            <div className="kpi-value">
+              {sub?.tamanho_arestas_dirigidas?.toLocaleString() ?? "—"}
+            </div>
+            <div className="kpi-unit">arestas</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Densidade dirigida</div>
+            <div className="kpi-value">
+              {sub ? (sub.densidade_dirigida * 100).toFixed(3) : "—"}
+            </div>
+            <div className="kpi-unit">%</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Pares avaliados</div>
+            <div className="kpi-value">{timing?.pares ?? "—"}</div>
+            <div className="kpi-unit">origem–destino</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">BF = Dijkstra</div>
+            <div className="kpi-value">{timing?.coincidencias ?? "—"}</div>
+            <div className="kpi-unit">de {timing?.pares ?? "—"} pares</div>
+          </div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Arestas dirigidas</div>
-          <div className="kpi-value">{sub?.tamanho_arestas_dirigidas?.toLocaleString() ?? "—"}</div>
-          <div className="kpi-unit">arestas</div>
+      )}
+
+      <section className="section">
+        <h2 className="section-title">
+          <Microscope size={18} strokeWidth={1.75} aria-hidden="true" />
+          Visualizações — subgrafo SNAP
+        </h2>
+        <p className="section-lead">
+          Gráficos exploratórios gerados pela análise da Parte 2. Clique em uma imagem para ampliar.
+        </p>
+        {vizDisponiveis === null ? (
+          <LoadingCenter label="Verificando visualizações…" />
+        ) : vizDisponiveis.length > 0 ? (
+          <div className="img-grid">
+            {vizDisponiveis.map((img, i) => (
+              <article
+                key={img.src}
+                className="img-card"
+                style={{ animationDelay: `${i * 50}ms` }}
+                onClick={() => setModal(img)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Ampliar: ${img.label}`}
+              >
+                <img src={img.src} alt={img.label} loading="lazy" />
+                <div className="img-card-footer">
+                  <span className="img-card-label">{img.label}</span>
+                  <Badge variant={img.variant}>{img.cat}</Badge>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Terminal}
+            title="Nenhuma visualização encontrada"
+            description="Execute python -m src.cli parte2 no terminal do projeto para gerar os gráficos do subgrafo SNAP."
+          />
+        )}
+      </section>
+
+      {exploracao && (exploracao.bfs?.length > 0 || exploracao.dfs?.length > 0) && (
+        <div className="two-col">
+          {exploracao.bfs?.length > 0 && (
+            <section className="section" style={{ marginBottom: 0 }}>
+              <h2 className="section-title">BFS dirigido — amostras</h2>
+              {exploracao.bfs.map((b) => (
+                <div key={b.fonte} style={{ marginBottom: "var(--space-5)" }}>
+                  <div className="info-row">
+                    <span className="info-key">Fonte</span>
+                    <span className="info-val mono">{b.fonte}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key">Nós alcançados</span>
+                    <span className="info-val">
+                      {b.nos_alcancados?.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key">Camadas (distância → qtd)</span>
+                    <span className="info-val mono">
+                      {Object.entries(b.camadas || {})
+                        .map(([d, n]) => `${d}:${n}`)
+                        .join(" · ")}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
+          {exploracao.dfs?.length > 0 && (
+            <section className="section" style={{ marginBottom: 0 }}>
+              <h2 className="section-title">DFS dirigido — amostras</h2>
+              {exploracao.dfs.map((d) => (
+                <div key={d.fonte} style={{ marginBottom: "var(--space-5)" }}>
+                  <div className="info-row">
+                    <span className="info-key">Fonte</span>
+                    <span className="info-val mono">{d.fonte}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key">Nós visitados</span>
+                    <span className="info-val">
+                      {d.nos_visitados?.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key">Amostra da ordem</span>
+                    <span className="info-val mono">
+                      {(d.amostra_dfs || []).join(" → ")}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
         </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Densidade dirigida</div>
-          <div className="kpi-value">{sub ? (sub.densidade_dirigida * 100).toFixed(3) : "—"}</div>
-          <div className="kpi-unit">%</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Pares avaliados</div>
-          <div className="kpi-value">{timing?.pares ?? "—"}</div>
-          <div className="kpi-unit">origem–destino</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">BF = Dijkstra</div>
-          <div className="kpi-value">{timing?.coincidencias ?? "—"}</div>
-          <div className="kpi-unit">de {timing?.pares ?? "—"} pares</div>
-        </div>
-      </div>
+      )}
 
       <div className="two-col">
-        <div className="section">
-          <div className="section-title">Dijkstra (SSSP)</div>
+        <section className="section">
+          <h2 className="section-title">Dijkstra (SSSP)</h2>
           <div className="info-row">
             <span className="info-key">Fontes distintas</span>
             <span className="info-val">{timing?.fontes ?? "—"}</span>
           </div>
           <div className="info-row">
             <span className="info-key">Tempo total</span>
-            <span className="info-val" style={{ color: "var(--blue)", fontWeight: 700 }}>
+            <span
+              className="info-val"
+              style={{ color: "var(--color-primary)", fontWeight: 700 }}
+            >
               {dij?.total?.toFixed(4) ?? "—"} s
             </span>
           </div>
@@ -165,16 +403,19 @@ export default function PageParte2() {
             <span className="info-key">Tempo médio por fonte</span>
             <span className="info-val">{dij?.medio?.toFixed(4) ?? "—"} s</span>
           </div>
-        </div>
-        <div className="section">
-          <div className="section-title">Bellman-Ford (SSSP)</div>
+        </section>
+        <section className="section">
+          <h2 className="section-title">Bellman-Ford (SSSP)</h2>
           <div className="info-row">
             <span className="info-key">Fontes distintas</span>
             <span className="info-val">{timing?.fontes ?? "—"}</span>
           </div>
           <div className="info-row">
             <span className="info-key">Tempo total</span>
-            <span className="info-val" style={{ color: "var(--purple)", fontWeight: 700 }}>
+            <span
+              className="info-val"
+              style={{ color: "var(--color-accent)", fontWeight: 700 }}
+            >
               {bf?.total?.toFixed(4) ?? "—"} s
             </span>
           </div>
@@ -182,18 +423,25 @@ export default function PageParte2() {
             <span className="info-key">Tempo médio por fonte</span>
             <span className="info-val">{bf?.medio?.toFixed(4) ?? "—"} s</span>
           </div>
-        </div>
+        </section>
       </div>
 
-      <div className="section">
-        <div className="section-title">Benchmarking Visual — Dijkstra × Bellman-Ford</div>
-        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16, lineHeight: 1.6 }}>
-          Comparação de performance com <strong style={{ color: "var(--blue)" }}>escalas padronizadas por métrica</strong> e
-          cores consistentes: <span style={{ color: "var(--blue)" }}>■ Dijkstra</span> vs{" "}
-          <span style={{ color: "var(--purple)" }}>■ Bellman-Ford</span>.
-          Insight: em grafos sem pesos negativos, Dijkstra é sistematicamente mais eficiente.
+      <section className="section">
+        <h2 className="section-title">Benchmarking — Dijkstra × Bellman-Ford</h2>
+        <p className="section-lead">
+          Comparação de performance com escalas padronizadas por métrica.{" "}
+          <span style={{ color: "var(--color-primary)" }}>■ Dijkstra</span> vs{" "}
+          <span style={{ color: "var(--color-accent)" }}>■ Bellman-Ford</span>.
+          Em grafos sem pesos negativos, Dijkstra é sistematicamente mais eficiente.
         </p>
-        <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--space-6)",
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
           <TimeBarchart
             label="Tempo Total (s)"
             dijVal={dij?.total}
@@ -208,70 +456,73 @@ export default function PageParte2() {
           />
         </div>
         {dij && bf && (
-          <div style={{
-            marginTop: 16,
-            padding: "10px 16px",
-            background: "rgba(77,163,255,0.06)",
-            border: "1px solid rgba(77,163,255,0.18)",
-            borderRadius: 8,
-            fontSize: 12,
-            color: "var(--muted)",
-          }}>
+          <div className="insight-box">
             Dijkstra foi{" "}
-            <strong style={{ color: "var(--blue)" }}>
+            <strong style={{ color: "var(--color-primary)" }}>
               {bf.total > 0 ? (bf.total / dij.total).toFixed(1) : "—"}×
             </strong>{" "}
-            mais rápido no total.
-            Coincidência de resultados:{" "}
-            <strong style={{ color: "var(--green)" }}>
+            mais rápido no total. Coincidência de resultados:{" "}
+            <strong style={{ color: "var(--color-success)" }}>
               {timing?.coincidencias}/{timing?.pares} pares
-            </strong>.
+            </strong>
+            .
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="section">
-        <div className="section-title">Comparação BF × Dijkstra (primeiros 20 pares)</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Origem</th>
-              <th>Destino</th>
-              <th>Dist. BF</th>
-              <th>Dist. Dijkstra</th>
-              <th>Diferença</th>
-              <th>Coincide</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cmpRows.map((r, i) => (
-              <tr key={i}>
-                <td style={{ fontFamily: "monospace" }}>{r.origem}</td>
-                <td style={{ fontFamily: "monospace" }}>{r.destino}</td>
-                <td>{parseFloat(r.distancia_bellman_ford).toFixed(2)}</td>
-                <td>{parseFloat(r.distancia_dijkstra).toFixed(2)}</td>
-                <td style={{ color: "var(--muted)", fontFamily: "monospace", fontSize: 11 }}>
-                  {parseFloat(r.diferenca_abs || 0).toExponential(2)}
-                </td>
-                <td>
-                  <span className={`badge ${r.coincide === "True" ? "badge-green" : "badge-red"}`}>
-                    {r.coincide === "True" ? "Sim" : "Não"}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <section className="section">
+        <h2 className="section-title">Comparação BF × Dijkstra (primeiros 20 pares)</h2>
+        {cmpRows.length === 0 ? (
+          <LoadingCenter label="Carregando comparação…" />
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Origem</th>
+                  <th>Destino</th>
+                  <th className="num">Dist. BF</th>
+                  <th className="num">Dist. Dijkstra</th>
+                  <th className="num">Diferença</th>
+                  <th>Coincide</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cmpRows.map((r, i) => (
+                  <tr key={i}>
+                    <td className="mono">{r.origem}</td>
+                    <td className="mono">{r.destino}</td>
+                    <td className="num">
+                      {parseFloat(r.distancia_bellman_ford).toFixed(2)}
+                    </td>
+                    <td className="num">
+                      {parseFloat(r.distancia_dijkstra).toFixed(2)}
+                    </td>
+                    <td className="num mono" style={{ color: "var(--color-text-muted)" }}>
+                      {parseFloat(r.diferenca_abs || 0).toExponential(2)}
+                    </td>
+                    <td>
+                      <Badge
+                        variant={r.coincide === "True" ? "success" : "danger"}
+                      >
+                        {r.coincide === "True" ? "Sim" : "Não"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
-      <div className="section">
-        <div className="section-title">Distribuição do grau de saída (subgrafo SNAP)</div>
-        <img
-          src="/out/parte2/viz_parte2_grau_saida.png"
-          alt="Distribuição grau saída"
-          style={{ maxWidth: "100%", borderRadius: 8 }}
-        />
-      </div>
+      <Modal
+        open={!!modal}
+        onClose={() => setModal(null)}
+        caption={modal ? `${modal.label} — Esc para fechar` : ""}
+      >
+        {modal && <img src={modal.src} alt={modal.label} />}
+      </Modal>
     </div>
   );
 }

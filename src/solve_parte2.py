@@ -105,6 +105,29 @@ def _plot_grau_saida(out_path: Path, graus: Counter):
     plt.close(fig)
 
 
+def _plot_bfs_camadas(out_path: Path, camadas: dict, fonte: int):
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    xs = sorted(int(k) for k in camadas.keys())
+
+    ys = [camadas[str(k)] for k in xs]
+
+    ax.bar([str(x) for x in xs], ys, color="#4da3ff")
+
+    ax.set_title(f"BFS (dirigido) — camadas a partir do no {fonte}")
+
+    ax.set_xlabel("Distancia (camada)")
+
+    ax.set_ylabel("Quantidade de nos")
+
+    fig.tight_layout()
+
+    fig.savefig(out_path, dpi=150)
+
+    plt.close(fig)
+
+
 def _grafo_demo_neg():
 
     # teste peso negativo
@@ -354,6 +377,22 @@ def run_parte2(
         g,
         fontes
     )
+
+    (out / "exploracao_bfs_dfs.json").write_text(
+        json.dumps(
+            {"bfs": bfs_res, "dfs": dfs_res},
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    if bfs_res:
+        _plot_bfs_camadas(
+            out / "viz_parte2_bfs_camadas.png",
+            bfs_res[0]["camadas"],
+            bfs_res[0]["fonte"],
+        )
 
     pares = _pares_rota(list(V))
 

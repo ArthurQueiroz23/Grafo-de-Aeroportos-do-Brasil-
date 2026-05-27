@@ -1,23 +1,55 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Network } from "vis-network";
 import { DataSet } from "vis-data";
+import { Focus, X } from "lucide-react";
+import Button from "./ui/Button.jsx";
+import { REGION_HEX, GRAPH } from "../constants/theme.js";
+import { layoutAirports } from "./grafoLayout.js";
 
-const REGION_COLOR = {
-  Norte: "#7c5cff",
-  Nordeste: "#4da3ff",
-  "Centro-Oeste": "#f5c542",
-  Sudeste: "#2ecc71",
-  Sul: "#e74c3c",
-};
-
-const AIRPORT_COORDS = {
-  GRU: { x: 180, y: 120 }, CGH: { x: 170, y: 130 }, GIG: { x: 190, y: 110 },
-  SDU: { x: 195, y: 105 }, BSB: { x: 80, y: 30 },  CNF: { x: 160, y: 100 },
-  SSA: { x: 270, y: -20 }, REC: { x: 340, y: -60 }, FOR: { x: 300, y: -130 },
-  NAT: { x: 360, y: -100 }, JPA: { x: 370, y: -70 }, THE: { x: 260, y: -150 },
-  MAO: { x: -200, y: -120 }, BEL: { x: 0, y: -100 }, PVH: { x: -150, y: -60 },
-  CWB: { x: 120, y: 200 }, FLN: { x: 150, y: 250 }, POA: { x: 120, y: 320 },
-  RBR: { x: -180, y: -30 }, GYN: { x: 60, y: 50 },
+const NETWORK_OPTIONS = {
+  autoResize: true,
+  nodes: {
+    shape: "dot",
+    borderWidth: 2,
+    borderWidthSelected: 3,
+    shadow: {
+      enabled: true,
+      color: "rgba(0,0,0,0.45)",
+      size: 8,
+      x: 0,
+      y: 2,
+    },
+    font: {
+      face: "DM Sans, sans-serif",
+      color: GRAPH.text,
+      strokeWidth: 4,
+      strokeColor: GRAPH.labelStroke,
+      align: "center",
+    },
+    scaling: { min: 14, max: 44 },
+  },
+  edges: {
+    selectionWidth: 0,
+    hoverWidth: 0,
+    shadow: false,
+    smooth: false,
+    arrows: { to: { enabled: false } },
+  },
+  interaction: {
+    hover: true,
+    tooltipDelay: 120,
+    hideEdgesOnDrag: false,
+    hideEdgesOnZoom: false,
+    dragNodes: true,
+    dragView: true,
+    zoomView: true,
+    zoomSpeed: 0.35,
+    multiselect: false,
+    navigationButtons: false,
+    keyboard: { enabled: false },
+  },
+  physics: { enabled: false },
+  layout: { randomSeed: 42 },
 };
 
 function hexToRgb(hex) {
@@ -27,20 +59,171 @@ function hexToRgb(hex) {
   return `${r},${g},${b}`;
 }
 
-function scaleCoords(airports) {
-  const xs = airports.map((a) => (AIRPORT_COORDS[a.id] || { x: 0 }).x);
-  const ys = airports.map((a) => (AIRPORT_COORDS[a.id] || { y: 0 }).y);
-  const minX = Math.min(...xs), maxX = Math.max(...xs);
-  const minY = Math.min(...ys), maxY = Math.max(...ys);
-  const rangeX = maxX - minX || 1, rangeY = maxY - minY || 1;
-  return airports.map((a) => {
-    const raw = AIRPORT_COORDS[a.id] || { x: 0, y: 0 };
+function edgeColorByWeight(weight, isMandatory) {
+  if (isMandatory) return GRAPH.mandatory;
+  if (weight >= 2.5) return GRAPH.inter;
+  if (weight >= 1.8) return GRAPH.hub;
+  return GRAPH.edgeDefault;
+}
+
+function buildTooltip(id, regiao, grau, regionColor, isHub) {
+  const rgb = hexToRgb(regionColor);
+  return [
+    `<div style="background:#161d26;border:1px solid rgba(${rgb},0.5);`,
+    `border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;`,
+    `box-shadow:0 12px 32px rgba(0,0,0,0.4);">`,
+    `<div style="font-size:16px;font-weight:700;color:${regionColor};letter-spacing:0.04em;">${id}</div>`,
+    regiao
+      ? `<div style="font-size:11px;color:rgba(238,241,245,0.55);margin-top:6px;">${regiao}</div>`
+      : "",
+    `<div style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:rgba(238,241,245,0.7);">`,
+    `<span>Grau <strong style="color:#eef1f5;">${grau}</strong></span>`,
+    isHub ? `<span style="color:${regionColor};">★ Hub</span>` : "",
+    `</div></div>`,
+  ].join("");
+}
+
+function buildNode(a, regionMap, grauMap, maxGrau) {
+  const grau = grauMap[a.id] || 1;
+  const regiao = regionMap[a.id] || "";
+  const regionColor = REGION_HEX[regiao] || GRAPH.path;
+  const rgb = hexToRgb(regionColor);
+  const hasGraus = Object.keys(grauMap).length > 0;
+  const isHub = hasGraus && grau >= maxGrau * 0.4;
+  const size = hasGraus ? Math.round(16 + (grau / maxGrau) * 18) : 20;
+
+  const color = {
+    background: `rgba(${rgb},0.28)`,
+    border: regionColor,
+    highlight: {
+      background: `rgba(${rgb},0.55)`,
+      border: "#ffffff",
+    },
+    hover: {
+      background: `rgba(${rgb},0.45)`,
+      border: "#ffffff",
+    },
+  };
+
+  return {
+    id: a.id,
+    label: a.id,
+    title: buildTooltip(a.id, regiao, grau, regionColor, isHub),
+    x: a.x,
+    y: a.y,
+    physics: false,
+    fixed: false,
+    color,
+    font: {
+      size: isHub ? 12 : 10,
+      color: GRAPH.text,
+      strokeWidth: isHub ? 5 : 4,
+      strokeColor: GRAPH.labelStroke,
+      vadjust: Math.round(size * 0.55) + 10,
+    },
+    size: isHub ? size + 4 : size,
+    borderWidth: isHub ? 2.5 : 2,
+    shadow: isHub
+      ? {
+          enabled: true,
+          color: `rgba(${rgb},0.5)`,
+          size: 16,
+          x: 0,
+          y: 0,
+        }
+      : {
+          enabled: true,
+          color: "rgba(0,0,0,0.35)",
+          size: 6,
+          x: 0,
+          y: 2,
+        },
+    _regiao: regiao,
+    _grau: grau,
+    _regionColor: regionColor,
+    _baseColor: color,
+    _baseSize: isHub ? size + 4 : size,
+    _baseBorder: isHub ? 2.5 : 2,
+    _baseShadow: isHub,
+  };
+}
+
+function buildEdges(edges, mandatorySet, minW, rangeW) {
+  return edges.map((e, idx) => {
+    const isMandatory =
+      mandatorySet.has(`${e.from}__${e.to}`) ||
+      mandatorySet.has(`${e.to}__${e.from}`);
+    const normW = (e.weight - minW) / rangeW;
+    const w = e.weight || 1;
+    const color = edgeColorByWeight(w, isMandatory);
+    const width = isMandatory ? 3 : 1.8 + normW * 2.4;
+
     return {
-      ...a,
-      x: ((raw.x - minX) / rangeX - 0.5) * 900,
-      y: ((raw.y - minY) / rangeY - 0.5) * 500,
+      id: idx,
+      from: e.from,
+      to: e.to,
+      color: {
+        color,
+        highlight: color,
+        hover: GRAPH.edgeHover,
+        opacity: isMandatory ? 1 : 0.85,
+      },
+      width,
+      smooth: false,
+      arrows: { to: { enabled: false } },
+      _mandatory: isMandatory,
+      _weight: w,
+      _normW: normW,
+      _baseWidth: width,
+      _baseColor: color,
+      _baseOpacity: isMandatory ? 1 : 0.85,
     };
   });
+}
+
+function getNeighbors(edgeList, nodeId) {
+  const set = new Set([nodeId]);
+  edgeList.forEach((e) => {
+    if (e._filterHidden) return;
+    if (e.from === nodeId) set.add(e.to);
+    if (e.to === nodeId) set.add(e.from);
+  });
+  return set;
+}
+
+function GraphLegend({ className = "" }) {
+  return (
+    <div className={`graph-legend-card ${className}`.trim()}>
+      <div className="graph-legend-title">Legenda</div>
+      <div className="graph-legend-items">
+        <div className="graph-legend-item">
+          <span
+            className="graph-legend-swatch graph-legend-swatch--line"
+            style={{ background: GRAPH.mandatory }}
+          />
+          Rotas obrigatórias
+        </div>
+        <div className="graph-legend-item">
+          <span
+            className="graph-legend-swatch graph-legend-swatch--line graph-legend-swatch--path"
+            style={{ background: GRAPH.path }}
+          />
+          Caminho Dijkstra
+        </div>
+        <div className="graph-legend-item">
+          <span
+            className="graph-legend-swatch graph-legend-swatch--line"
+            style={{ background: GRAPH.hub }}
+          />
+          Rotas hub / longo alcance
+        </div>
+        <div className="graph-legend-item">
+          <span className="graph-legend-swatch graph-legend-swatch--line graph-legend-swatch--gradient" />
+          Malha regional
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function GrafoVis({
@@ -55,21 +238,325 @@ export default function GrafoVis({
   const networkRef = useRef(null);
   const nodesRef = useRef(null);
   const edgesRef = useRef(null);
+  const selectedIdRef = useRef(null);
+  const didDragRef = useRef(false);
+  const isInitialFitRef = useRef(true);
+
+  const highlightPathRef = useRef(highlightPath);
+  const routesOnRef = useRef(true);
 
   const [searchVal, setSearchVal] = useState("");
   const [routesOn, setRoutesOn] = useState(true);
+
+  highlightPathRef.current = highlightPath;
+  routesOnRef.current = routesOn;
+
   const [filterRegion, setFilterRegion] = useState("");
   const [filterMinDegree, setFilterMinDegree] = useState(0);
   const [metrics, setMetrics] = useState({ nodes: 0, edges: 0, density: 0 });
+  const [selectedId, setSelectedId] = useState(null);
+  const [routeCount, setRouteCount] = useState(0);
 
   const maxGrau = useMemo(() => {
     const vals = Object.values(grauMap);
     return vals.length > 0 ? Math.max(...vals) : 1;
   }, [grauMap]);
 
-  // Build network when data changes
+  const fitNetwork = useCallback((options = {}) => {
+    const { clearSelection = false } = options;
+    const network = networkRef.current;
+    if (!network || !nodesRef.current) return;
+
+    if (clearSelection) {
+      selectedIdRef.current = null;
+      setSelectedId(null);
+      setRouteCount(0);
+      network.unselectAll();
+    }
+
+    const ids = nodesRef.current
+      .get({ filter: (n) => !n.hidden })
+      .map((n) => n.id);
+
+    if (!ids.length) return;
+
+    requestAnimationFrame(() => {
+      try {
+        network.fit({
+          nodes: ids,
+          animation: {
+            duration: isInitialFitRef.current ? 0 : 400,
+            easingFunction: "easeInOutQuad",
+          },
+        });
+      } catch {
+        const positions = network.getPositions(ids);
+        const xs = [];
+        const ys = [];
+        ids.forEach((id) => {
+          const p = positions[id];
+          if (p) {
+            xs.push(p.x);
+            ys.push(p.y);
+          }
+        });
+        if (!xs.length || !containerRef.current) return;
+        const pad = 80;
+        const minX = Math.min(...xs) - pad;
+        const maxX = Math.max(...xs) + pad;
+        const minY = Math.min(...ys) - pad;
+        const maxY = Math.max(...ys) + pad;
+        const { clientWidth: w, clientHeight: h } = containerRef.current;
+        const scale =
+          Math.min(w / (maxX - minX), h / (maxY - minY)) * 0.9;
+        network.moveTo({
+          position: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
+          scale: Math.max(0.15, Math.min(2.5, scale)),
+          animation: {
+            duration: isInitialFitRef.current ? 0 : 400,
+            easingFunction: "easeInOutQuad",
+          },
+        });
+      }
+      isInitialFitRef.current = false;
+    });
+  }, []);
+
+  const syncEdgeStyles = useCallback((focusId, pathList, showMandatory) => {
+    if (!edgesRef.current) return 0;
+
+    const pathSet = new Set();
+    if (pathList?.length > 1) {
+      for (let i = 0; i < pathList.length - 1; i++) {
+        pathSet.add(`${pathList[i]}__${pathList[i + 1]}`);
+        pathSet.add(`${pathList[i + 1]}__${pathList[i]}`);
+      }
+    }
+
+    let visibleRoutes = 0;
+
+    edgesRef.current.update(
+      edgesRef.current.get().map((e) => {
+        if (e._filterHidden) {
+          return { id: e.id, hidden: true, _selectionHidden: false };
+        }
+
+        const inPath =
+          pathSet.has(`${e.from}__${e.to}`) ||
+          pathSet.has(`${e.to}__${e.from}`);
+        const connected =
+          focusId && (e.from === focusId || e.to === focusId);
+        const mandatory = e._mandatory && showMandatory;
+
+        if (focusId && !connected && !inPath) {
+          return {
+            id: e.id,
+            hidden: true,
+            _selectionHidden: true,
+          };
+        }
+
+        visibleRoutes += 1;
+
+        if (inPath) {
+          return {
+            id: e.id,
+            hidden: false,
+            _selectionHidden: false,
+            color: { color: GRAPH.path, opacity: 1 },
+            width: 4,
+            shadow: {
+              enabled: true,
+              color: GRAPH.pathGlow,
+              size: 12,
+              x: 0,
+              y: 0,
+            },
+            zIndex: 3,
+          };
+        }
+
+        if (focusId && connected) {
+          return {
+            id: e.id,
+            hidden: false,
+            _selectionHidden: false,
+            color: { color: e._baseColor, opacity: 1 },
+            width: e._baseWidth + 1.2,
+            shadow: {
+              enabled: true,
+              color: "rgba(232,168,56,0.25)",
+              size: 6,
+              x: 0,
+              y: 0,
+            },
+            zIndex: 2,
+          };
+        }
+
+        if (!showMandatory && mandatory) {
+          return {
+            id: e.id,
+            hidden: false,
+            _selectionHidden: false,
+            color: { color: e._baseColor, opacity: e._baseOpacity * 0.35 },
+            width: e._baseWidth * 0.7,
+            shadow: false,
+            zIndex: 0,
+          };
+        }
+
+        return {
+          id: e.id,
+          hidden: false,
+          _selectionHidden: false,
+          color: {
+            color: mandatory ? GRAPH.mandatory : e._baseColor,
+            opacity: mandatory ? 1 : e._baseOpacity,
+          },
+          width: mandatory ? e._baseWidth + 0.5 : e._baseWidth,
+          shadow: false,
+          zIndex: mandatory ? 1 : 0,
+        };
+      })
+    );
+
+    return visibleRoutes;
+  }, []);
+
+  const syncNodeStyles = useCallback((focusId, pathList) => {
+    if (!nodesRef.current || !edgesRef.current) return;
+
+    const pathNodes = new Set(pathList || []);
+    const neighborSet = focusId
+      ? getNeighbors(edgesRef.current.get(), focusId)
+      : null;
+
+    nodesRef.current.update(
+      nodesRef.current.get().map((n) => {
+        if (n.hidden) return { id: n.id };
+
+        const rgb = hexToRgb(n._regionColor || GRAPH.path);
+        const onPath = pathNodes.has(n.id);
+        const isSelected = focusId === n.id;
+        const isNeighbor = neighborSet?.has(n.id);
+        const dimmed = focusId && !isNeighbor;
+
+        if (dimmed) {
+          return {
+            id: n.id,
+            opacity: 0.18,
+            font: { color: "rgba(238,241,245,0.25)" },
+            color: {
+              ...n._baseColor,
+              background: `rgba(${rgb},0.08)`,
+              border: `rgba(${rgb},0.35)`,
+            },
+          };
+        }
+
+        if (onPath) {
+          return {
+            id: n.id,
+            opacity: 1,
+            borderWidth: 3.5,
+            size: n._baseSize + 6,
+            color: {
+              ...n._baseColor,
+              border: GRAPH.path,
+              background: `rgba(${rgb},0.5)`,
+            },
+            shadow: {
+              enabled: true,
+              color: GRAPH.pathGlow,
+              size: 20,
+              x: 0,
+              y: 0,
+            },
+          };
+        }
+
+        return {
+          id: n.id,
+          opacity: 1,
+          size: isSelected ? n._baseSize + 8 : n._baseSize,
+          borderWidth: isSelected ? 3.5 : n._baseBorder,
+          color: isSelected
+            ? {
+                ...n._baseColor,
+                border: "#ffffff",
+                background: `rgba(${rgb},0.55)`,
+              }
+            : n._baseColor,
+          font: {
+            size: isSelected ? 12 : n.font?.size || 10,
+            color: GRAPH.text,
+            strokeWidth: isSelected ? 5 : 4,
+            strokeColor: GRAPH.labelStroke,
+            vadjust: Math.round(n._baseSize * 0.55) + 10,
+          },
+          shadow: isSelected || n._baseShadow
+            ? {
+                enabled: true,
+                color: isSelected
+                  ? "rgba(232,168,56,0.45)"
+                  : `rgba(${rgb},0.45)`,
+                size: isSelected ? 22 : 16,
+                x: 0,
+                y: 0,
+              }
+            : {
+                enabled: true,
+                color: "rgba(0,0,0,0.35)",
+                size: 6,
+                x: 0,
+                y: 2,
+              },
+        };
+      })
+    );
+  }, []);
+
+  const applySelection = useCallback(
+    (id) => {
+      selectedIdRef.current = id;
+      setSelectedId(id);
+
+      const network = networkRef.current;
+      if (network) {
+        if (id) network.selectNodes([id]);
+        else network.unselectAll();
+      }
+
+      const count = syncEdgeStyles(
+        id,
+        highlightPathRef.current,
+        routesOnRef.current
+      );
+      setRouteCount(id ? count : 0);
+      syncNodeStyles(id, highlightPathRef.current);
+    },
+    [syncEdgeStyles, syncNodeStyles]
+  );
+
+  const applySelectionRef = useRef(applySelection);
+  applySelectionRef.current = applySelection;
+
+  const focusNode = useCallback((id) => {
+    if (!networkRef.current || !id) return;
+    networkRef.current.focus(id, {
+      scale: 1.55,
+      animation: { duration: 480, easingFunction: "easeInOutQuad" },
+    });
+  }, []);
+
   useEffect(() => {
-    if (!containerRef.current || !airports || !edges) return;
+    if (!containerRef.current || !airports?.length || !edges?.length) return;
+
+    isInitialFitRef.current = true;
+    selectedIdRef.current = null;
+    setSelectedId(null);
+    setRouteCount(0);
 
     const mandatorySet = new Set(
       (mandatoryPairs || []).map(([a, b]) => `${a}__${b}`)
@@ -80,74 +567,11 @@ export default function GrafoVis({
     const maxW = Math.max(...weights);
     const rangeW = maxW - minW || 1;
 
-    const scaledAirports = scaleCoords(airports);
-    const hasRegions = Object.keys(regionMap).length > 0;
-    const hasGraus = Object.keys(grauMap).length > 0;
-
-    const nodeData = scaledAirports.map((a) => {
-      const grau = grauMap[a.id] || 1;
-      const regiao = regionMap[a.id] || "";
-      const regionColor = REGION_COLOR[regiao] || "#4da3ff";
-      const rgb = hexToRgb(regionColor);
-      const isHub = hasGraus && grau >= maxGrau * 0.4;
-      const nodeSize = hasGraus
-        ? Math.max(16, Math.min(40, 16 + (grau / maxGrau) * 24))
-        : 22;
-
-      return {
-        id: a.id,
-        label: a.id,
-        title: [
-          `<div style="background:#0d1e35;border:1px solid rgba(${rgb},0.5);border-radius:8px;`,
-          `padding:10px 14px;font-family:'Segoe UI',sans-serif;font-size:13px;color:#dde8f5;">`,
-          `<strong style="color:${regionColor};font-size:15px;">${a.id}</strong>`,
-          regiao ? `<div style="font-size:11px;color:rgba(221,232,245,0.6);margin-top:4px;">Região: ${regiao}</div>` : "",
-          grau > 1 ? `<div style="font-size:11px;color:rgba(221,232,245,0.6);margin-top:2px;">Grau: ${grau}</div>` : "",
-          isHub ? `<div style="font-size:10px;color:${regionColor};margin-top:4px;font-weight:700;">★ Hub</div>` : "",
-          `</div>`,
-        ].join(""),
-        x: a.x,
-        y: a.y,
-        physics: false,
-        color: {
-          background: `rgba(${rgb},${hasRegions ? "0.18" : "0.12"})`,
-          border: regionColor,
-          highlight: { background: regionColor, border: "#ffffff" },
-          hover: { background: `rgba(${rgb},0.35)`, border: "#ffffff" },
-        },
-        font: {
-          color: "#dde8f5",
-          size: isHub ? 13 : 11,
-          face: "Segoe UI",
-        },
-        shape: "ellipse",
-        size: nodeSize,
-        borderWidth: isHub ? 3 : 2,
-        shadow: isHub
-          ? { enabled: true, color: `rgba(${rgb},0.5)`, size: 14, x: 0, y: 0 }
-          : false,
-        _regiao: regiao,
-        _grau: grau,
-      };
-    });
-
-    const edgeData = edges.map((e, idx) => {
-      const key = `${e.from}__${e.to}`;
-      const isMandatory = mandatorySet.has(key);
-      const normW = (e.weight - minW) / rangeW;
-      const alpha = isMandatory ? 1.0 : 0.12 + normW * 0.55;
-      return {
-        id: idx,
-        from: e.from,
-        to: e.to,
-        color: { color: isMandatory ? "#e74c3c" : `rgba(77,163,255,${alpha.toFixed(2)})` },
-        width: isMandatory ? 3 : Math.max(1, 1 + normW * 1.8),
-        arrows: { to: { enabled: true, scaleFactor: 0.55 } },
-        font: { size: 9, color: "rgba(221,232,245,0.25)", align: "middle" },
-        _mandatory: isMandatory,
-        _normW: normW,
-      };
-    });
+    const scaledAirports = layoutAirports(airports);
+    const nodeData = scaledAirports.map((a) =>
+      buildNode(a, regionMap, grauMap, maxGrau)
+    );
+    const edgeData = buildEdges(edges, mandatorySet, minW, rangeW);
 
     nodesRef.current = new DataSet(nodeData);
     edgesRef.current = new DataSet(edgeData);
@@ -161,28 +585,76 @@ export default function GrafoVis({
           : 0,
     });
 
-    const options = {
-      interaction: { hover: true, tooltipDelay: 80, zoomView: true },
-      physics: false,
-      layout: { randomSeed: 42 },
-      edges: { smooth: { type: "curvedCW", roundness: 0.15 } },
-    };
-
-    networkRef.current = new Network(
+    const network = new Network(
       containerRef.current,
       { nodes: nodesRef.current, edges: edgesRef.current },
-      options
+      NETWORK_OPTIONS
     );
+    networkRef.current = network;
+
+    network.once("afterDrawing", () => fitNetwork());
+
+    network.on("dragStart", (params) => {
+      didDragRef.current = false;
+      if (params.nodes?.length) {
+        network.setOptions({
+          interaction: { ...NETWORK_OPTIONS.interaction, dragView: false },
+        });
+      }
+    });
+
+    network.on("dragging", (params) => {
+      if (params.nodes?.length) didDragRef.current = true;
+    });
+
+    network.on("dragEnd", (params) => {
+      network.setOptions({
+        interaction: { ...NETWORK_OPTIONS.interaction, dragView: true },
+      });
+      if (!params.nodes?.length || !nodesRef.current) return;
+      const id = params.nodes[0];
+      const pos = network.getPositions([id])[id];
+      if (pos) {
+        nodesRef.current.update({
+          id,
+          x: pos.x,
+          y: pos.y,
+          physics: false,
+          fixed: false,
+        });
+      }
+    });
+
+    network.on("click", (params) => {
+      if (didDragRef.current) {
+        didDragRef.current = false;
+        return;
+      }
+      if (params.nodes.length > 0) {
+        const id = params.nodes[0];
+        const node = nodesRef.current?.get(id);
+        if (node?.hidden) return;
+        const next = selectedIdRef.current === id ? null : id;
+        applySelectionRef.current(next);
+      } else {
+        applySelectionRef.current(null);
+      }
+    });
 
     return () => {
-      if (networkRef.current) {
-        networkRef.current.destroy();
-        networkRef.current = null;
-      }
+      network.destroy();
+      networkRef.current = null;
     };
-  }, [airports, edges, mandatoryPairs, regionMap, grauMap]);
+  }, [
+    airports,
+    edges,
+    mandatoryPairs,
+    regionMap,
+    grauMap,
+    maxGrau,
+    fitNetwork,
+  ]);
 
-  // Dynamic filter: region + min degree
   useEffect(() => {
     if (!nodesRef.current || !edgesRef.current) return;
 
@@ -196,120 +668,85 @@ export default function GrafoVis({
     const hiddenNodes = new Set(
       nodeUpdates.filter((n) => n.hidden).map((n) => n.id)
     );
-    const edgeUpdates = edgesRef.current.get().map((e) => ({
-      id: e.id,
-      hidden: hiddenNodes.has(e.from) || hiddenNodes.has(e.to),
-    }));
-    edgesRef.current.update(edgeUpdates);
+
+    const sel = selectedIdRef.current;
+    if (sel && hiddenNodes.has(sel)) {
+      applySelectionRef.current(null);
+    }
+
+    edgesRef.current.update(
+      edgesRef.current.get().map((e) => {
+        const filterHidden =
+          hiddenNodes.has(e.from) || hiddenNodes.has(e.to);
+        return { id: e.id, _filterHidden: filterHidden };
+      })
+    );
 
     const visNodes = nodeUpdates.filter((n) => !n.hidden).length;
-    const visEdges = edgeUpdates.filter((e) => !e.hidden).length;
+    const allEdges = edgesRef.current.get();
+    const visEdges = allEdges.filter(
+      (e) => !e._filterHidden && !e._selectionHidden
+    ).length;
+
     setMetrics({
       nodes: visNodes,
       edges: visEdges,
       density:
         visNodes >= 2 ? (2 * visEdges) / (visNodes * (visNodes - 1)) : 0,
     });
-  }, [filterRegion, filterMinDegree]);
 
-  // Highlight path with glow
-  useEffect(() => {
-    if (!edgesRef.current || !nodesRef.current) return;
-
-    const pathSet = new Set();
-    if (highlightPath && highlightPath.length > 1) {
-      for (let i = 0; i < highlightPath.length - 1; i++) {
-        pathSet.add(`${highlightPath[i]}__${highlightPath[i + 1]}`);
-        pathSet.add(`${highlightPath[i + 1]}__${highlightPath[i]}`);
-      }
-    }
-
-    const edgeUpdates = edgesRef.current.get().map((e) => {
-      const inPath =
-        pathSet.has(`${e.from}__${e.to}`) ||
-        pathSet.has(`${e.to}__${e.from}`);
-      const alpha = (e._normW || 0) * 0.55 + 0.12;
-      return {
-        id: e.id,
-        color: {
-          color: inPath
-            ? "#f5c542"
-            : e._mandatory
-            ? "#e74c3c"
-            : `rgba(77,163,255,${alpha.toFixed(2)})`,
-        },
-        width: inPath ? 5 : e._mandatory ? 3 : Math.max(1, 1 + (e._normW || 0) * 1.8),
-        shadow: inPath
-          ? { enabled: true, color: "rgba(245,197,66,0.75)", size: 18, x: 0, y: 0 }
-          : false,
-      };
+    requestAnimationFrame(() => {
+      fitNetwork({ clearSelection: false });
+      const id = selectedIdRef.current;
+      const count = syncEdgeStyles(id, highlightPath, routesOn);
+      setRouteCount(id ? count : 0);
+      syncNodeStyles(id, highlightPath);
     });
-    edgesRef.current.update(edgeUpdates);
+  }, [
+    filterRegion,
+    filterMinDegree,
+    fitNetwork,
+    syncEdgeStyles,
+    syncNodeStyles,
+    highlightPath,
+    routesOn,
+  ]);
 
-    // Glow on path nodes
-    if (highlightPath.length > 0) {
-      const pathNodes = new Set(highlightPath);
-      const nodeUpdates = nodesRef.current
-        .get()
-        .filter((n) => pathNodes.has(n.id))
-        .map((n) => ({
-          id: n.id,
-          borderWidth: 4,
-          color: { ...n.color, border: "#f5c542" },
-          shadow: { enabled: true, color: "rgba(245,197,66,0.65)", size: 18, x: 0, y: 0 },
-        }));
-      if (nodeUpdates.length > 0) nodesRef.current.update(nodeUpdates);
-    }
-  }, [highlightPath]);
+  useEffect(() => {
+    const id = selectedIdRef.current;
+    const count = syncEdgeStyles(id, highlightPath, routesOn);
+    setRouteCount(id ? count : 0);
+    syncNodeStyles(id, highlightPath);
+  }, [highlightPath, routesOn, syncEdgeStyles, syncNodeStyles]);
 
   const handleSearch = () => {
     const val = searchVal.trim().toUpperCase();
-    if (!val || !networkRef.current) return;
-    const node = nodesRef.current && nodesRef.current.get(val);
-    if (node) {
-      networkRef.current.focus(val, {
-        scale: 2.4,
-        animation: { duration: 600, easingFunction: "easeInOutQuad" },
-      });
-      networkRef.current.selectNodes([val]);
+    if (!val) return;
+    const node = nodesRef.current?.get(val);
+    if (node && !node.hidden) {
+      applySelection(val);
+      focusNode(val);
     }
   };
 
-  const handleToggleRoutes = () => {
-    if (!edgesRef.current) return;
-    const next = !routesOn;
-    setRoutesOn(next);
-    const updates = edgesRef.current.get().map((e) => {
-      const alpha = (e._normW || 0) * 0.55 + 0.12;
-      return {
-        id: e.id,
-        color: {
-          color:
-            e._mandatory && next
-              ? "#e74c3c"
-              : `rgba(77,163,255,${alpha.toFixed(2)})`,
-        },
-        width:
-          e._mandatory && next ? 3 : Math.max(1, 1 + (e._normW || 0) * 1.8),
-        shadow: false,
-      };
-    });
-    edgesRef.current.update(updates);
-  };
+  const handleToggleRoutes = () => setRoutesOn((v) => !v);
 
-  const iataList = airports ? airports.map((a) => a.id) : [];
+  const iataList = airports?.map((a) => a.id) ?? [];
 
   return (
     <div>
-      {/* Filter controls */}
       <div className="graph-controls">
-        <div>
+        <div className="form-field" style={{ flex: "1 1 160px", maxWidth: 200 }}>
+          <label className="form-label" htmlFor="grafo-search">
+            Buscar IATA
+          </label>
           <input
+            id="grafo-search"
             className="ctrl-input"
             list="iata-autocomplete"
-            placeholder="Buscar aeroporto (ex: GRU)"
+            placeholder="ex: GRU"
             value={searchVal}
-            onChange={(e) => setSearchVal(e.target.value)}
+            onChange={(e) => setSearchVal(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
           <datalist id="iata-autocomplete">
@@ -318,39 +755,69 @@ export default function GrafoVis({
             ))}
           </datalist>
         </div>
-        <button className="btn" onClick={handleSearch}>
+
+        <Button variant="primary" size="sm" onClick={handleSearch}>
           Buscar
-        </button>
+        </Button>
 
-        <select
-          className="ctrl-input ctrl-select"
-          style={{ width: 160 }}
-          value={filterRegion}
-          onChange={(e) => setFilterRegion(e.target.value)}
-        >
-          <option value="">Todas as regiões</option>
-          {Object.keys(REGION_COLOR).map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
+        {selectedId && (
+          <>
+            <span className="graph-selection-badge">
+              {selectedId}
+              <span className="graph-selection-badge__count">
+                {routeCount} rotas
+              </span>
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => focusNode(selectedId)}
+            >
+              <Focus size={14} aria-hidden="true" />
+              Centralizar
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => applySelection(null)}
+              aria-label="Limpar seleção"
+            >
+              <X size={14} aria-hidden="true" />
+              Limpar
+            </Button>
+          </>
+        )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <label
-            style={{
-              fontSize: 11,
-              color: "var(--muted)",
-              whiteSpace: "nowrap",
-            }}
+        <div className="form-field">
+          <label className="form-label" htmlFor="grafo-regiao">
+            Região
+          </label>
+          <select
+            id="grafo-regiao"
+            className="ctrl-input ctrl-select"
+            style={{ minWidth: 160 }}
+            value={filterRegion}
+            onChange={(e) => setFilterRegion(e.target.value)}
           >
-            Grau ≥
+            <option value="">Todas as regiões</option>
+            {Object.keys(REGION_HEX).map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-field">
+          <label className="form-label" htmlFor="grafo-grau">
+            Grau mínimo
           </label>
           <input
+            id="grafo-grau"
             type="number"
             min={0}
             className="ctrl-input"
-            style={{ width: 70 }}
+            style={{ width: 72 }}
             value={filterMinDegree}
             onChange={(e) =>
               setFilterMinDegree(Math.max(0, parseInt(e.target.value) || 0))
@@ -358,153 +825,63 @@ export default function GrafoVis({
           />
         </div>
 
-        <button className="btn btn-outline" onClick={handleToggleRoutes}>
-          {routesOn ? "Ocultar rotas" : "Mostrar rotas"}
-        </button>
+        <Button variant="secondary" size="sm" onClick={handleToggleRoutes}>
+          {routesOn ? "Suavizar obrigatórias" : "Destacar obrigatórias"}
+        </Button>
       </div>
 
-      {/* Real-time metrics panel + region legend */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 10,
-          marginBottom: 12,
-          alignItems: "center",
-        }}
-      >
+      <div className="graph-metrics">
         {[
           { label: "Nós visíveis", value: metrics.nodes },
-          { label: "Arestas visíveis", value: metrics.edges },
+          {
+            label: selectedId ? "Rotas do aeroporto" : "Arestas visíveis",
+            value: selectedId ? routeCount : metrics.edges,
+          },
           {
             label: "Densidade",
-            value: (metrics.density * 100).toFixed(2) + "%",
+            value: `${(metrics.density * 100).toFixed(2)}%`,
           },
         ].map((m) => (
-          <div
-            key={m.label}
-            style={{
-              background: "rgba(77,163,255,0.07)",
-              border: "1px solid rgba(77,163,255,0.18)",
-              borderRadius: 8,
-              padding: "5px 14px",
-              display: "flex",
-              gap: 10,
-              alignItems: "center",
-            }}
-          >
-            <span
-              style={{
-                fontSize: 10,
-                color: "var(--muted)",
-                textTransform: "uppercase",
-                letterSpacing: "0.6px",
-              }}
-            >
-              {m.label}
-            </span>
-            <span
-              style={{ fontSize: 14, fontWeight: 700, color: "var(--blue)" }}
-            >
-              {m.value}
-            </span>
+          <div key={m.label} className="metric-pill">
+            <span className="metric-pill-label">{m.label}</span>
+            <span className="metric-pill-value">{m.value}</span>
           </div>
         ))}
 
-        {/* Clickable region legend */}
         <div
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
+          className="legend-row"
+          style={{ marginLeft: "auto", marginBottom: 0 }}
         >
-          {Object.entries(REGION_COLOR).map(([r, c]) => (
-            <span
+          {Object.entries(REGION_HEX).map(([r, c]) => (
+            <button
+              type="button"
               key={r}
+              className={`legend-chip${
+                filterRegion && filterRegion !== r ? " legend-chip--dimmed" : ""
+              }`}
               onClick={() => setFilterRegion(filterRegion === r ? "" : r)}
-              style={{
-                cursor: "pointer",
-                fontSize: 11,
-                color: c,
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                opacity: filterRegion && filterRegion !== r ? 0.35 : 1,
-                transition: "opacity 0.2s",
-                userSelect: "none",
-              }}
+              aria-pressed={filterRegion === r}
             >
-              <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: c,
-                  display: "inline-block",
-                  flexShrink: 0,
-                }}
-              />
+              <span className="legend-dot" style={{ background: c }} />
               {r}
-            </span>
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Edge legend */}
-      <div
-        style={{
-          display: "flex",
-          gap: 18,
-          marginBottom: 10,
-          fontSize: 11,
-          color: "var(--muted)",
-          flexWrap: "wrap",
-        }}
-      >
-        <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span
-            style={{
-              display: "inline-block",
-              width: 22,
-              height: 3,
-              background: "#e74c3c",
-              borderRadius: 2,
-            }}
-          />
-          Rotas obrigatórias
+      <div className={`graph-panel${selectedId ? " graph-panel--focused" : ""}`}>
+        <span className="graph-hint">
+          {selectedId
+            ? `${selectedId}: ${routeCount} rotas — clique no fundo ou Limpar`
+            : "Clique no aeroporto · Arraste para reposicionar · Fundo arrasta o mapa"}
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span
-            style={{
-              display: "inline-block",
-              width: 22,
-              height: 4,
-              background: "#f5c542",
-              borderRadius: 2,
-              boxShadow: "0 0 6px rgba(245,197,66,0.7)",
-            }}
-          />
-          Caminho calculado (Dijkstra)
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span
-            style={{
-              display: "inline-block",
-              width: 22,
-              height: 2,
-              background:
-                "linear-gradient(90deg, rgba(77,163,255,0.2), rgba(77,163,255,0.8))",
-              borderRadius: 2,
-            }}
-          />
-          Espessura ∝ peso da aresta
-        </span>
+
+        <GraphLegend className="graph-legend-card--overlay" />
+
+        <div className="graph-container" ref={containerRef} />
       </div>
 
-      <div className="graph-container" ref={containerRef} />
+      <GraphLegend className="graph-legend-card--below" />
     </div>
   );
 }

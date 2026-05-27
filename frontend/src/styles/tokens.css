@@ -1,0 +1,84 @@
+:root {
+  /* ── Color system ── */
+  --color-background: #080b10;
+  --color-surface: #0f1419;
+  --color-surface-elevated: #161d26;
+  --color-surface-overlay: #1c2530;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.14);
+  --color-primary: #e8a838;
+  --color-primary-hover: #f2be5a;
+  --color-primary-muted: rgba(232, 168, 56, 0.14);
+  --color-accent: #3d9b8f;
+  --color-accent-muted: rgba(61, 155, 143, 0.14);
+  --color-text: #eef1f5;
+  --color-text-muted: rgba(238, 241, 245, 0.62);
+  --color-text-subtle: rgba(238, 241, 245, 0.38);
+  --color-success: #4caf82;
+  --color-success-muted: rgba(76, 175, 130, 0.12);
+  --color-warning: #e8a838;
+  --color-warning-muted: rgba(232, 168, 56, 0.1);
+  --color-danger: #d4716a;
+  --color-danger-muted: rgba(212, 113, 106, 0.12);
+
+  /* Data visualization (regions) */
+  --region-norte: #6b9fd4;
+  --region-nordeste: #3d9b8f;
+  --region-centro: #e8a838;
+  --region-sudeste: #9aa8b8;
+  --region-sul: #d4716a;
+
+  /* ── Typography ── */
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --text-display: clamp(2rem, 1.5rem + 2vw, 2.75rem);
+  --text-h1: clamp(1.5rem, 1.2rem + 1.2vw, 1.875rem);
+  --text-h2: clamp(1.125rem, 1rem + 0.5vw, 1.3125rem);
+  --text-h3: 1rem;
+  --text-body: clamp(0.875rem, 0.82rem + 0.2vw, 0.9375rem);
+  --text-caption: 0.75rem;
+  --text-label: 0.6875rem;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.55;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.06em;
+
+  /* ── Spacing (4px base) ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* ── Radius ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* ── Depth ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24), 0 0 0 1px var(--color-border);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32), 0 0 0 1px var(--color-border);
+  --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--color-border-strong);
+  --shadow-glow: 0 0 32px rgba(232, 168, 56, 0.12);
+
+  /* ── Motion ── */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 300ms;
+
+  /* ── Layout ── */
+  --sidebar-width: 260px;
+  --header-height: 56px;
+  --content-max: 1280px;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
+import { Route, ArrowRight } from "lucide-react";
 import GrafoVis from "../components/GrafoVis.jsx";
-
+import PageHeader from "../components/ui/PageHeader.jsx";
 function parseAdjCSV(text) {
   const lines = text.trim().split("\n").slice(1);
   return lines.map((line) => {
@@ -93,7 +94,8 @@ export default function PageCalculadora() {
       const gMap = {};
       grausLines.forEach((l) => {
         const parts = l.split(",");
-        if (parts[0] && parts[1]) gMap[parts[0].trim()] = parseInt(parts[1].trim()) || 1;
+        if (parts[0] && parts[1])
+          gMap[parts[0].trim()] = parseInt(parts[1].trim()) || 1;
       });
       setGrauMap(gMap);
     });
@@ -102,7 +104,12 @@ export default function PageCalculadora() {
   const graph = useMemo(() => buildGraph(adjRows), [adjRows]);
   const vertices = useMemo(() => Object.keys(graph).sort(), [graph]);
   const edges = useMemo(
-    () => adjRows.map((r) => ({ from: r.origem, to: r.destino, weight: parseFloat(r.peso) || 1 })),
+    () =>
+      adjRows.map((r) => ({
+        from: r.origem,
+        to: r.destino,
+        weight: parseFloat(r.peso) || 1,
+      })),
     [adjRows]
   );
 
@@ -116,64 +123,87 @@ export default function PageCalculadora() {
   const temCaminho = !igual && resultado && resultado.path.length > 0;
 
   return (
-    <div>
-      <div className="page-title">Calculadora de Rotas</div>
-      <div className="page-subtitle">
-        Calcula o menor caminho entre aeroportos usando o algoritmo de Dijkstra
-      </div>
+    <>
+      <PageHeader
+        eyebrow="Algoritmos em grafos"
+        title="Calculadora de Rotas"
+        subtitle="Calcula o menor caminho entre aeroportos usando o algoritmo de Dijkstra, com visualização no grafo."
+      />
 
-      <div className="section">
-        <div className="section-title">Selecionar rota</div>
+      <section className="section">
+        <h2 className="section-title">
+          <Route size={18} strokeWidth={1.75} aria-hidden="true" />
+          Selecionar rota
+        </h2>
 
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 20 }}>
-          <div>
-            <label className="select-label">Origem</label>
+        <div className="form-row">
+          <div className="form-field">
+            <label className="form-label" htmlFor="calc-origem">
+              Origem
+            </label>
             <select
+              id="calc-origem"
               className="ctrl-input ctrl-select"
+              style={{ minWidth: 140 }}
               value={origem}
               onChange={(e) => setOrigem(e.target.value)}
             >
               {vertices.map((v) => (
-                <option key={v} value={v}>{v}</option>
+                <option key={v} value={v}>
+                  {v}
+                </option>
               ))}
             </select>
           </div>
 
-          <div style={{ paddingBottom: 6 }}>
-            <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
-              <path d="M0 8H24M24 8L16 2M24 8L16 14" stroke="rgba(77,163,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              paddingBottom: "var(--space-1)",
+              color: "var(--color-text-subtle)",
+            }}
+            aria-hidden="true"
+          >
+            <ArrowRight size={22} strokeWidth={1.5} />
           </div>
 
-          <div>
-            <label className="select-label">Destino</label>
+          <div className="form-field">
+            <label className="form-label" htmlFor="calc-destino">
+              Destino
+            </label>
             <select
+              id="calc-destino"
               className="ctrl-input ctrl-select"
+              style={{ minWidth: 140 }}
               value={destino}
               onChange={(e) => setDestino(e.target.value)}
             >
               {vertices.map((v) => (
-                <option key={v} value={v}>{v}</option>
+                <option key={v} value={v}>
+                  {v}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
         {igual && (
-          <div className="result-warning">
-            Origem e destino são iguais.
+          <div className="alert alert--warning" role="alert">
+            Origem e destino são iguais. Selecione aeroportos diferentes para calcular uma rota.
           </div>
         )}
 
         {semCaminho && (
-          <div className="result-error">
-            Não existe caminho entre {origem} e {destino}.
+          <div className="alert alert--error" role="alert">
+            Não existe caminho entre <strong>{origem}</strong> e <strong>{destino}</strong> na
+            malha atual. Tente outro par de aeroportos.
           </div>
         )}
 
         {temCaminho && (
           <>
-            <div className="kpi-grid" style={{ marginBottom: 16 }}>
+            <div className="kpi-grid" style={{ marginTop: "var(--space-6)" }}>
               <div className="kpi-card">
                 <div className="kpi-label">Custo total</div>
                 <div className="kpi-value">{resultado.cost.toFixed(1)}</div>
@@ -186,35 +216,37 @@ export default function PageCalculadora() {
               </div>
               <div className="kpi-card">
                 <div className="kpi-label">Paradas</div>
-                <div className="kpi-value">{Math.max(0, resultado.path.length - 2)}</div>
+                <div className="kpi-value">
+                  {Math.max(0, resultado.path.length - 2)}
+                </div>
                 <div className="kpi-unit">intermediárias</div>
               </div>
             </div>
 
-            <div className="result-path">
+            <div className="result-path" aria-live="polite">
               {resultado.path.map((node, i) => (
                 <span key={node}>
-                  <span style={{ fontWeight: 700 }}>{node}</span>
+                  <strong>{node}</strong>
                   {i < resultado.path.length - 1 && (
-                    <span style={{ color: "rgba(77,163,255,0.5)", margin: "0 8px" }}>→</span>
+                    <span className="result-path-arrow">→</span>
                   )}
                 </span>
               ))}
             </div>
           </>
         )}
-      </div>
+      </section>
 
       {airports.length > 0 && edges.length > 0 && (
-        <div className="section">
-          <div className="section-title">
+        <section className="section">
+          <h2 className="section-title">
             Grafo interativo
             {temCaminho && (
-              <span style={{ fontWeight: 400, color: "var(--muted)", fontSize: 12 }}>
-                — arestas douradas = rota calculada
+              <span className="section-title-hint">
+                — arestas âmbar = rota calculada
               </span>
             )}
-          </div>
+          </h2>
           <GrafoVis
             airports={airports}
             edges={edges}
@@ -222,8 +254,8 @@ export default function PageCalculadora() {
             regionMap={regionMap}
             grauMap={grauMap}
           />
-        </div>
+        </section>
       )}
-    </div>
+    </>
   );
 }

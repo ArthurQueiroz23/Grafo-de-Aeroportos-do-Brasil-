@@ -1,12 +1,60 @@
 import { useState } from "react";
+import { ImageIcon, ExternalLink } from "lucide-react";
+import PageHeader from "../components/ui/PageHeader.jsx";
+import Button from "../components/ui/Button.jsx";
+import Badge from "../components/ui/Badge.jsx";
+import Modal from "../components/ui/Modal.jsx";
 
 const IMAGES = [
-  { src: "/out/viz_distribuicao_graus.png",   label: "Distribuição de graus",        cat: "Exploratória",  catColor: "#4da3ff" },
-  { src: "/out/viz_bfs_camadas.png",          label: "Camadas BFS",                  cat: "Exploratória",  catColor: "#4da3ff" },
-  { src: "/out/viz_ranking_graus.png",        label: "Ranking de conectividade",     cat: "Explanatória",  catColor: "#7c5cff" },
-  { src: "/out/viz_regioes_metricas.png",     label: "Regiões — ordem e tamanho",    cat: "Explanatória",  catColor: "#7c5cff" },
-  { src: "/out/viz_regioes_densidade.png",    label: "Regiões — densidade",          cat: "Explanatória",  catColor: "#7c5cff" },
-  { src: "/out/viz_subgrafo_maior_grau.png",  label: "Subgrafo do maior grau (GRU)", cat: "Explanatória",  catColor: "#f5c542" },
+  {
+    src: "/out/viz_distribuicao_graus.png",
+    label: "Distribuição de graus",
+    cat: "Exploratória",
+    variant: "accent",
+  },
+  {
+    src: "/out/viz_bfs_camadas.png",
+    label: "Camadas BFS",
+    cat: "Exploratória",
+    variant: "accent",
+  },
+  {
+    src: "/out/viz_ranking_graus.png",
+    label: "Ranking de conectividade",
+    cat: "Explanatória",
+    variant: "primary",
+  },
+  {
+    src: "/out/viz_regioes_metricas.png",
+    label: "Regiões — ordem e tamanho",
+    cat: "Explanatória",
+    variant: "primary",
+  },
+  {
+    src: "/out/viz_regioes_densidade.png",
+    label: "Regiões — densidade",
+    cat: "Explanatória",
+    variant: "primary",
+  },
+  {
+    src: "/out/viz_subgrafo_maior_grau.png",
+    label: "Subgrafo do maior grau (GRU)",
+    cat: "Explanatória",
+    variant: "primary",
+  },
+];
+
+const CAT_LEGEND = [
+  {
+    cat: "Exploratória",
+    variant: "accent",
+    desc: "O que os dados revelam por conta própria",
+  },
+  {
+    cat: "Explanatória",
+    variant: "primary",
+    desc: "Confirma hipóteses e comunica insights",
+  },
 ];
 
 export default function PageVisualizacoes() {
@@ -14,110 +62,103 @@ export default function PageVisualizacoes() {
   const [showInteractive, setShowInteractive] = useState(false);
 
   return (
-    <div>
-      <div className="page-title">Visualizações</div>
-      <div className="page-subtitle">Gráficos exploratórios e explicativos gerados pela análise</div>
+    <>
+      <PageHeader
+        eyebrow="Outputs da análise"
+        title="Visualizações"
+        subtitle="Gráficos exploratórios e explicativos gerados pela análise, além do grafo interativo PyVis."
+      />
 
-      <div className="section">
-        <div className="section-title">Grafo interativo (PyVis)</div>
-        <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-          <button className="btn" onClick={() => setShowInteractive((v) => !v)}>
+      <section className="section">
+        <h2 className="section-title">
+          <ImageIcon size={18} strokeWidth={1.75} aria-hidden="true" />
+          Grafo interativo (PyVis)
+        </h2>
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--space-3)",
+            marginBottom: "var(--space-5)",
+            flexWrap: "wrap",
+          }}
+        >
+          <Button
+            variant="primary"
+            onClick={() => setShowInteractive((v) => !v)}
+          >
             {showInteractive ? "Ocultar grafo" : "Abrir grafo interativo"}
-          </button>
-          <a
+          </Button>
+          <Button
+            as="a"
+            variant="secondary"
             href="/out/grafo_interativo.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-outline"
           >
-            Nova aba →
-          </a>
-          <a
+            Nova aba
+            <ExternalLink size={14} aria-hidden="true" />
+          </Button>
+          <Button
+            as="a"
+            variant="ghost"
             href="/out/arvore_percurso.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-outline"
           >
-            Árvore DFS →
-          </a>
+            Árvore DFS
+            <ExternalLink size={14} aria-hidden="true" />
+          </Button>
         </div>
         {showInteractive && (
-          <div className="iframe-wrap" style={{ height: 520 }}>
-            <iframe src="/out/grafo_interativo.html" title="Grafo interativo" />
+          <div className="iframe-wrap">
+            <iframe src="/out/grafo_interativo.html" title="Grafo interativo PyVis" />
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="section">
-        <div className="section-title">Gráficos estatísticos</div>
-        <div style={{ display: "flex", gap: 14, marginBottom: 16, flexWrap: "wrap" }}>
-          {[
-            { cat: "Exploratória",  color: "#4da3ff", desc: "O que os dados revelam por conta própria" },
-            { cat: "Explanatória",  color: "#7c5cff", desc: "Confirma hipóteses e comunica insights" },
-          ].map((c) => (
-            <div key={c.cat} style={{
-              display: "flex", alignItems: "center", gap: 8,
-              background: `${c.color}12`,
-              border: `1px solid ${c.color}30`,
-              borderRadius: 8, padding: "6px 14px",
-            }}>
-              <span style={{ width: 10, height: 10, borderRadius: 3, background: c.color, display: "inline-block", flexShrink: 0 }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: c.color }}>{c.cat}</span>
-              <span style={{ fontSize: 11, color: "var(--muted)" }}>— {c.desc}</span>
-            </div>
+      <section className="section">
+        <h2 className="section-title">Gráficos estatísticos</h2>
+        <div className="legend-row" style={{ marginBottom: "var(--space-5)" }}>
+          {CAT_LEGEND.map((c) => (
+            <span key={c.cat} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+              <Badge variant={c.variant}>{c.cat}</Badge>
+              <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-muted)" }}>
+                {c.desc}
+              </span>
+            </span>
           ))}
         </div>
         <div className="img-grid">
-          {IMAGES.map((img) => (
-            <div
+          {IMAGES.map((img, i) => (
+            <article
               key={img.src}
               className="img-card"
+              style={{ animationDelay: `${i * 50}ms` }}
               onClick={() => setModal(img)}
+              onKeyDown={(e) => e.key === "Enter" && setModal(img)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Ampliar: ${img.label}`}
             >
               <img src={img.src} alt={img.label} loading="lazy" />
-              <div className="img-card-label" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span>{img.label}</span>
-                <span style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: img.catColor,
-                  background: `${img.catColor}18`,
-                  border: `1px solid ${img.catColor}30`,
-                  borderRadius: 10,
-                  padding: "2px 8px",
-                  whiteSpace: "nowrap",
-                }}>
-                  {img.cat}
-                </span>
+              <div className="img-card-footer">
+                <span className="img-card-label">{img.label}</span>
+                <Badge variant={img.variant}>{img.cat}</Badge>
               </div>
-            </div>
+            </article>
           ))}
         </div>
-      </div>
+      </section>
 
-      {modal && (
-        <div
-          onClick={() => setModal(null)}
-          style={{
-            position: "fixed", inset: 0,
-            background: "rgba(4, 14, 25, 0.92)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 1000, cursor: "zoom-out",
-            backdropFilter: "blur(4px)",
-          }}
-        >
-          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
-            <img
-              src={modal.src}
-              alt={modal.label}
-              style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,0.7)" }}
-            />
-            <div style={{ color: "var(--muted)", textAlign: "center", marginTop: 10, fontSize: 13 }}>
-              {modal.label} — clique fora para fechar
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <Modal
+        open={!!modal}
+        onClose={() => setModal(null)}
+        caption={modal ? `${modal.label} — pressione Esc ou clique fora para fechar` : ""}
+      >
+        {modal && (
+          <img src={modal.src} alt={modal.label} />
+        )}
+      </Modal>
+    </>
   );
 }
