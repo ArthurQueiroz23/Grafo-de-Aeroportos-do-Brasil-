@@ -17,6 +17,7 @@ import PageRotas from "./pages/PageRotas.jsx";
 import PageVisualizacoes from "./pages/PageVisualizacoes.jsx";
 import PageParte2 from "./pages/PageParte2.jsx";
 import EmptyState from "./components/ui/EmptyState.jsx";
+import { AppBackground } from "./components/ui/background-paths.jsx";
 
 const PAGES = [
   { id: "geral", label: "Visão Geral", Icon: Globe },
@@ -60,6 +61,8 @@ export default function App() {
 
   return (
     <div className="layout">
+      <AppBackground />
+
       <div
         className={`sidebar-backdrop${menuOpen ? " sidebar-backdrop--visible" : ""}`}
         onClick={() => setMenuOpen(false)}

@@ -721,6 +721,158 @@
   color: var(--color-primary);
 }
 
+.viz-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.viz-mode-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: rgba(15, 20, 25, 0.6);
+  width: fit-content;
+}
+
+.viz-mode-bar .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.viz-panel__content {
+  min-width: 0;
+}
+
+.globe-rotas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.globe-rotas--solo {
+  max-width: min(760px, 100%);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.globe-rotas--solo .globe-rotas__canvas {
+  max-width: min(680px, 100%);
+  margin: 0 auto;
+}
+
+.globe-rotas__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.globe-rotas__stage {
+  position: relative;
+}
+
+.globe-rotas__canvas {
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: radial-gradient(
+    ellipse 80% 70% at 50% 50%,
+    rgba(232, 168, 56, 0.06),
+    transparent 70%
+  );
+  background-color: #060810;
+}
+
+.globe-rotas--solo .globe-rotas__canvas {
+  padding: var(--space-4);
+  min-height: min(68vh, 620px);
+}
+
+.globe-rotas__hint-bar {
+  top: var(--space-3);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  max-width: calc(100% - var(--space-8));
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.globe-rotas__legend {
+  bottom: var(--space-3);
+  left: var(--space-3);
+  max-width: min(220px, 46%);
+  padding: var(--space-3) var(--space-4);
+  pointer-events: none;
+}
+
+.globe-rotas__legend .graph-legend-title {
+  margin-bottom: var(--space-2);
+}
+
+.globe-rotas__legend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2) var(--space-4);
+}
+
+.globe-rotas__legend-grid .graph-legend-item {
+  gap: var(--space-2);
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+.globe-rotas__legend-grid .graph-legend-swatch--line {
+  width: 18px;
+}
+
+@media (max-width: 520px) {
+  .globe-rotas__hint-bar {
+    display: none;
+  }
+
+  .globe-rotas__legend {
+    max-width: calc(100% - var(--space-6));
+    left: var(--space-2);
+    right: var(--space-2);
+    bottom: var(--space-2);
+  }
+
+  .globe-rotas__legend-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.globe-rotas__controls {
+  margin-bottom: 0;
+}
+
+.globe-marker-label {
+  touch-action: manipulation;
+}
+
+.globe-marker-label:hover {
+  filter: brightness(1.15);
+}
+
+.globe-marker-label:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .graph-panel {
   position: relative;
   border-radius: var(--radius-lg);

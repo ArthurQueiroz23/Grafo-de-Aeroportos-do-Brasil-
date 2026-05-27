@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Microscope, Terminal } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader.jsx";
-import Badge from "../components/ui/Badge.jsx";
+import AppBadge from "../components/ui/AppBadge.jsx";
+import { InteractiveListTable } from "../components/ui/interactive-logs-table-shadcnui.jsx";
+import { mapComparacaoBfDijkstra } from "../lib/interactive-list-adapters.js";
 import Modal from "../components/ui/Modal.jsx";
 import EmptyState from "../components/ui/EmptyState.jsx";
 import { LoadingCenter, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
@@ -312,7 +314,7 @@ export default function PageParte2() {
                 <img src={img.src} alt={img.label} loading="lazy" />
                 <div className="img-card-footer">
                   <span className="img-card-label">{img.label}</span>
-                  <Badge variant={img.variant}>{img.cat}</Badge>
+                  <AppBadge variant={img.variant}>{img.cat}</AppBadge>
                 </div>
               </article>
             ))}
@@ -475,44 +477,16 @@ export default function PageParte2() {
         {cmpRows.length === 0 ? (
           <LoadingCenter label="Carregando comparação…" />
         ) : (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Origem</th>
-                  <th>Destino</th>
-                  <th className="num">Dist. BF</th>
-                  <th className="num">Dist. Dijkstra</th>
-                  <th className="num">Diferença</th>
-                  <th>Coincide</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cmpRows.map((r, i) => (
-                  <tr key={i}>
-                    <td className="mono">{r.origem}</td>
-                    <td className="mono">{r.destino}</td>
-                    <td className="num">
-                      {parseFloat(r.distancia_bellman_ford).toFixed(2)}
-                    </td>
-                    <td className="num">
-                      {parseFloat(r.distancia_dijkstra).toFixed(2)}
-                    </td>
-                    <td className="num mono" style={{ color: "var(--color-text-muted)" }}>
-                      {parseFloat(r.diferenca_abs || 0).toExponential(2)}
-                    </td>
-                    <td>
-                      <Badge
-                        variant={r.coincide === "True" ? "success" : "danger"}
-                      >
-                        {r.coincide === "True" ? "Sim" : "Não"}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <InteractiveListTable
+            title="Comparação BF × Dijkstra"
+            items={mapComparacaoBfDijkstra(cmpRows)}
+            searchPlaceholder="Buscar par origem–destino…"
+            filterLabels={{
+              level: "Resultado",
+              service: "Origem",
+              status: "Destino",
+            }}
+          />
         )}
       </section>
 

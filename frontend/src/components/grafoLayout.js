@@ -2,7 +2,7 @@
  * Layout geográfico (lon/lat → plano) com escala ampla e
  * afastamentos manuais nos clusters metropolitanos.
  */
-const GEO = {
+export const AIRPORT_GEO = {
   MAO: { lat: -3.04, lon: -60.05 },
   BEL: { lat: -1.39, lon: -48.48 },
   PVH: { lat: -8.71, lon: -63.9 },
@@ -64,7 +64,7 @@ function project(lat, lon) {
 
 export function layoutAirports(airports) {
   return airports.map((a) => {
-    const g = GEO[a.id];
+    const g = AIRPORT_GEO[a.id];
     let x = 0;
     let y = 0;
     if (g) {

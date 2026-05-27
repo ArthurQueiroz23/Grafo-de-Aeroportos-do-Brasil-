@@ -17,21 +17,9 @@ body {
   font-size: var(--text-body);
   line-height: var(--leading-normal);
   color: var(--color-text);
-  background: var(--color-background);
+  background: #080b10;
   height: 100%;
   overflow: hidden;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 80% 50% at 100% -20%, rgba(232, 168, 56, 0.06), transparent 50%),
-    radial-gradient(ellipse 60% 40% at -10% 100%, rgba(61, 155, 143, 0.05), transparent 45%),
-    var(--color-background);
 }
 
 body::after {

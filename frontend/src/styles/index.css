@@ -1,3 +1,5 @@
+/* Tailwind (shadcn / background-paths) carregado em main.jsx via tailwind.css */
+
 @import "./tokens.css";
 @import "./base.css";
 @import "./layout.css";

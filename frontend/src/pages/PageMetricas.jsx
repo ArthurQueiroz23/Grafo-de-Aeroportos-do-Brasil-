@@ -1,8 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { BarChart3 } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader.jsx";
-import Badge from "../components/ui/Badge.jsx";
 import { LoadingCenter } from "../components/ui/LoadingState.jsx";
+import { InteractiveListTable } from "../components/ui/interactive-logs-table-shadcnui.jsx";
+import {
+  mapRegioes,
+  mapEgo,
+  mapGrausRanking,
+} from "../lib/interactive-list-adapters.js";
 import { REGION_HEX, CHART } from "../constants/theme.js";
 
 function DegreeHistogram({ graus }) {
@@ -164,9 +169,6 @@ export default function PageMetricas() {
       .then((t) => setGraus(parseCSV(t)));
   }, []);
 
-  const maxGrau =
-    graus.length > 0 ? Math.max(...graus.map((g) => parseInt(g.grau))) : 1;
-
   const TABS = [
     { id: "regioes", label: "Por Região" },
     { id: "ego", label: "Ego-redes" },
@@ -239,43 +241,12 @@ export default function PageMetricas() {
                 })}
               </div>
 
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Região</th>
-                      <th className="num">Ordem</th>
-                      <th className="num">Tamanho</th>
-                      <th className="num">Densidade</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {regioes.map((r, i) => {
-                      const color = REGION_HEX[r.regiao] || CHART.primary;
-                      return (
-                        <tr key={i}>
-                          <td>
-                            <Badge
-                              style={{
-                                background: `${color}20`,
-                                color,
-                                borderColor: `${color}40`,
-                              }}
-                            >
-                              {r.regiao}
-                            </Badge>
-                          </td>
-                          <td className="num">{r.ordem}</td>
-                          <td className="num">{r.tamanho}</td>
-                          <td className="num">
-                            {parseFloat(r.densidade).toFixed(4)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <InteractiveListTable
+                title="Tabela regional"
+                items={mapRegioes(regioes)}
+                searchPlaceholder="Buscar por região, ordem ou densidade…"
+                filterLabels={{ level: "Região" }}
+              />
             </>
           )}
         </section>
@@ -290,36 +261,15 @@ export default function PageMetricas() {
           {ego.length === 0 ? (
             <LoadingCenter />
           ) : (
-            <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Aeroporto</th>
-                    <th className="num">Grau</th>
-                    <th className="num">Ordem Ego</th>
-                    <th className="num">Tamanho Ego</th>
-                    <th className="num">Densidade Ego</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ego.map((r, i) => (
-                    <tr key={i}>
-                      <td>
-                        <Badge variant="primary">{r.aeroporto}</Badge>
-                      </td>
-                      <td className="num" style={{ fontWeight: 600, color: "var(--color-primary)" }}>
-                        {r.grau}
-                      </td>
-                      <td className="num">{r.ordem_ego}</td>
-                      <td className="num">{r.tamanho_ego}</td>
-                      <td className="num">
-                        {parseFloat(r.densidade_ego).toFixed(4)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <InteractiveListTable
+              title="Ego-redes por aeroporto"
+              items={mapEgo(ego)}
+              searchPlaceholder="Buscar aeroporto ou métricas de ego…"
+              filterLabels={{
+                level: "Faixa de grau",
+                service: "Aeroporto",
+              }}
+            />
           )}
         </section>
       )}
@@ -333,34 +283,15 @@ export default function PageMetricas() {
           {graus.length === 0 ? (
             <LoadingCenter />
           ) : (
-            <div className="rank-list">
-              {graus.slice(0, 15).map((g, i) => {
-                const grau = parseInt(g.grau);
-                const pct = (grau / maxGrau) * 100;
-                return (
-                  <div key={i} className="rank-row">
-                    <span
-                      className={`rank-pos${i < 3 ? " rank-pos--top" : ""}`}
-                    >
-                      {i + 1}
-                    </span>
-                    <span
-                      className={`rank-code${i < 3 ? " rank-code--top" : ""}`}
-                    >
-                      {g.aeroporto}
-                    </span>
-                    <div className="rank-bar-track">
-                      <div
-                        className="rank-bar-fill"
-                        style={{ width: `${pct}%` }}
-                      >
-                        {grau}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <InteractiveListTable
+              title="Top 15 — conectividade"
+              items={mapGrausRanking(graus, 15)}
+              searchPlaceholder="Buscar aeroporto no ranking…"
+              filterLabels={{
+                level: "Faixa de grau",
+                service: "Aeroporto",
+              }}
+            />
           )}
         </section>
       )}

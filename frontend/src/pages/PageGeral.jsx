@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Network } from "lucide-react";
-import GrafoVis from "../components/GrafoVis.jsx";
+import GrafoVizPanel from "../components/GrafoVizPanel.jsx";
 import PageHeader from "../components/ui/PageHeader.jsx";
 import { SkeletonGraph, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
 
@@ -177,7 +177,7 @@ export default function PageGeral() {
         </div>
 
         {graphData ? (
-          <GrafoVis
+          <GrafoVizPanel
             airports={graphData.airports}
             edges={graphData.edges}
             mandatoryPairs={graphData.mandatoryPairs}

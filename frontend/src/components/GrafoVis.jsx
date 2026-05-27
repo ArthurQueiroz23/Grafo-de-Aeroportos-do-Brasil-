@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Network } from "vis-network";
 import { DataSet } from "vis-data";
 import { Focus, X } from "lucide-react";
-import Button from "./ui/Button.jsx";
+import AppButton from "./ui/AppButton.jsx";
 import { REGION_HEX, GRAPH } from "../constants/theme.js";
 import { layoutAirports } from "./grafoLayout.js";
 
@@ -756,9 +756,9 @@ export default function GrafoVis({
           </datalist>
         </div>
 
-        <Button variant="primary" size="sm" onClick={handleSearch}>
+        <AppButton variant="primary" size="sm" onClick={handleSearch}>
           Buscar
-        </Button>
+        </AppButton>
 
         {selectedId && (
           <>
@@ -768,15 +768,15 @@ export default function GrafoVis({
                 {routeCount} rotas
               </span>
             </span>
-            <Button
+            <AppButton
               variant="ghost"
               size="sm"
               onClick={() => focusNode(selectedId)}
             >
               <Focus size={14} aria-hidden="true" />
               Centralizar
-            </Button>
-            <Button
+            </AppButton>
+            <AppButton
               variant="ghost"
               size="sm"
               onClick={() => applySelection(null)}
@@ -784,7 +784,7 @@ export default function GrafoVis({
             >
               <X size={14} aria-hidden="true" />
               Limpar
-            </Button>
+            </AppButton>
           </>
         )}
 
@@ -825,9 +825,9 @@ export default function GrafoVis({
           />
         </div>
 
-        <Button variant="secondary" size="sm" onClick={handleToggleRoutes}>
+        <AppButton variant="secondary" size="sm" onClick={handleToggleRoutes}>
           {routesOn ? "Suavizar obrigatórias" : "Destacar obrigatórias"}
-        </Button>
+        </AppButton>
       </div>
 
       <div className="graph-metrics">

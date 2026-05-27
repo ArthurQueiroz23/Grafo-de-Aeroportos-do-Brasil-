@@ -27,6 +27,11 @@ function staticDirPlugin(urlPrefix, dirPath) {
 }
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   plugins: [
     react(),
     staticDirPlugin("/out", path.resolve(__dirname, "../out")),

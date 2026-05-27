@@ -1,4 +1,4 @@
-import Button from "./Button.jsx";
+import AppButton from "./AppButton.jsx";
 
 export default function EmptyState({ icon: Icon, title, description, actionLabel, onAction }) {
   return (
@@ -11,9 +11,9 @@ export default function EmptyState({ icon: Icon, title, description, actionLabel
       <h3 className="empty-state-title">{title}</h3>
       {description && <p className="empty-state-desc">{description}</p>}
       {actionLabel && onAction && (
-        <Button variant="secondary" onClick={onAction}>
+        <AppButton variant="secondary" onClick={onAction}>
           {actionLabel}
-        </Button>
+        </AppButton>
       )}
     </div>
   );

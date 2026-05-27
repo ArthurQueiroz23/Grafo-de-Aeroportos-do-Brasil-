@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ImageIcon, ExternalLink } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader.jsx";
-import Button from "../components/ui/Button.jsx";
-import Badge from "../components/ui/Badge.jsx";
+import AppButton from "../components/ui/AppButton.jsx";
+import AppBadge from "../components/ui/AppBadge.jsx";
 import Modal from "../components/ui/Modal.jsx";
 
 const IMAGES = [
@@ -82,13 +82,13 @@ export default function PageVisualizacoes() {
             flexWrap: "wrap",
           }}
         >
-          <Button
+          <AppButton
             variant="primary"
             onClick={() => setShowInteractive((v) => !v)}
           >
             {showInteractive ? "Ocultar grafo" : "Abrir grafo interativo"}
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
             as="a"
             variant="secondary"
             href="/out/grafo_interativo.html"
@@ -97,8 +97,8 @@ export default function PageVisualizacoes() {
           >
             Nova aba
             <ExternalLink size={14} aria-hidden="true" />
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
             as="a"
             variant="ghost"
             href="/out/arvore_percurso.html"
@@ -107,7 +107,7 @@ export default function PageVisualizacoes() {
           >
             Árvore DFS
             <ExternalLink size={14} aria-hidden="true" />
-          </Button>
+          </AppButton>
         </div>
         {showInteractive && (
           <div className="iframe-wrap">
@@ -121,7 +121,7 @@ export default function PageVisualizacoes() {
         <div className="legend-row" style={{ marginBottom: "var(--space-5)" }}>
           {CAT_LEGEND.map((c) => (
             <span key={c.cat} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-              <Badge variant={c.variant}>{c.cat}</Badge>
+              <AppBadge variant={c.variant}>{c.cat}</AppBadge>
               <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-muted)" }}>
                 {c.desc}
               </span>
@@ -143,7 +143,7 @@ export default function PageVisualizacoes() {
               <img src={img.src} alt={img.label} loading="lazy" />
               <div className="img-card-footer">
                 <span className="img-card-label">{img.label}</span>
-                <Badge variant={img.variant}>{img.cat}</Badge>
+                <AppBadge variant={img.variant}>{img.cat}</AppBadge>
               </div>
             </article>
           ))}
