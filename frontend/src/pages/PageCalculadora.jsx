@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
-import { Route, ArrowRight } from "lucide-react";
+import { Route, ArrowRight, GitCompare } from "lucide-react";
 import GrafoVis from "../components/GrafoVis.jsx";
 import PageHeader from "../components/ui/PageHeader.jsx";
+
 function parseAdjCSV(text) {
   const lines = text.trim().split("\n").slice(1);
   return lines.map((line) => {
@@ -64,6 +65,84 @@ function dijkstra(graph, start, end) {
   return { cost: dist[end], path };
 }
 
+function bellmanFord(graph, start, end) {
+  const nodes = Object.keys(graph);
+  const dist = {};
+  const prev = {};
+
+  for (const n of nodes) dist[n] = Infinity;
+  dist[start] = 0;
+
+  for (let i = 0; i < nodes.length - 1; i++) {
+    let updated = false;
+    for (const u of nodes) {
+      if (dist[u] === Infinity) continue;
+      for (const [v, w] of Object.entries(graph[u] || {})) {
+        const nd = dist[u] + w;
+        if (nd < dist[v]) {
+          dist[v] = nd;
+          prev[v] = u;
+          updated = true;
+        }
+      }
+    }
+    if (!updated) break;
+  }
+
+  if (dist[end] === Infinity) return { cost: Infinity, path: [] };
+
+  const path = [];
+  let cur = end;
+  while (cur !== undefined) {
+    path.unshift(cur);
+    cur = prev[cur];
+  }
+
+  return { cost: dist[end], path };
+}
+
+const ALGOS = [
+  { id: "dijkstra", label: "Dijkstra" },
+  { id: "bellman-ford", label: "Bellman-Ford" },
+  { id: "comparar", label: "Comparar" },
+];
+
+function PathDisplay({ path, color }) {
+  return (
+    <div
+      className="result-path"
+      aria-live="polite"
+      style={color ? { borderLeftColor: color } : undefined}
+    >
+      {path.map((node, i) => (
+        <span key={`${node}-${i}`}>
+          <strong>{node}</strong>
+          {i < path.length - 1 && (
+            <span className="result-path-arrow">→</span>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function AlgoLabel({ label, color }) {
+  return (
+    <div
+      style={{
+        fontSize: "var(--text-caption)",
+        fontWeight: 700,
+        color,
+        textTransform: "uppercase",
+        letterSpacing: "var(--tracking-wide)",
+        marginBottom: "var(--space-3)",
+      }}
+    >
+      {label}
+    </div>
+  );
+}
+
 export default function PageCalculadora() {
   const [adjRows, setAdjRows] = useState([]);
   const [airports, setAirports] = useState([]);
@@ -71,6 +150,7 @@ export default function PageCalculadora() {
   const [destino, setDestino] = useState("POA");
   const [regionMap, setRegionMap] = useState({});
   const [grauMap, setGrauMap] = useState({});
+  const [algo, setAlgo] = useState("dijkstra");
 
   useEffect(() => {
     fetch("/data/adjacencias_aeroportos.csv")
@@ -113,21 +193,41 @@ export default function PageCalculadora() {
     [adjRows]
   );
 
-  const resultado = useMemo(() => {
+  const resultadoDijkstra = useMemo(() => {
     if (!graph[origem] || !graph[destino] || origem === destino) return null;
     return dijkstra(graph, origem, destino);
   }, [graph, origem, destino]);
 
+  const resultadoBF = useMemo(() => {
+    if (!graph[origem] || !graph[destino] || origem === destino) return null;
+    return bellmanFord(graph, origem, destino);
+  }, [graph, origem, destino]);
+
+  const resultado =
+    algo === "bellman-ford" ? resultadoBF : resultadoDijkstra;
+
+  const highlightPath = useMemo(() => {
+    if (algo === "bellman-ford") return resultadoBF?.path ?? [];
+    return resultadoDijkstra?.path ?? [];
+  }, [algo, resultadoDijkstra, resultadoBF]);
+
   const igual = origem === destino;
   const semCaminho = !igual && resultado && resultado.path.length === 0;
   const temCaminho = !igual && resultado && resultado.path.length > 0;
+  const temComparacao =
+    algo === "comparar" &&
+    resultadoDijkstra?.path.length > 0 &&
+    resultadoBF?.path.length > 0;
+  const costasIguais =
+    temComparacao &&
+    Math.abs(resultadoDijkstra.cost - resultadoBF.cost) < 1e-9;
 
   return (
     <>
       <PageHeader
         eyebrow="Algoritmos em grafos"
         title="Calculadora de Rotas"
-        subtitle="Calcula o menor caminho entre aeroportos usando o algoritmo de Dijkstra, com visualização no grafo."
+        subtitle="Calcula o menor caminho entre aeroportos usando Dijkstra ou Bellman-Ford, com comparação direta e visualização no grafo."
       />
 
       <section className="section">
@@ -135,6 +235,24 @@ export default function PageCalculadora() {
           <Route size={18} strokeWidth={1.75} aria-hidden="true" />
           Selecionar rota
         </h2>
+
+        <div className="tabs" role="tablist" aria-label="Algoritmo de roteamento" style={{ marginBottom: "var(--space-5)" }}>
+          {ALGOS.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              role="tab"
+              aria-selected={algo === a.id}
+              className={`tab-btn${algo === a.id ? " tab-btn--active" : ""}`}
+              onClick={() => setAlgo(a.id)}
+            >
+              {a.id === "comparar" && (
+                <GitCompare size={12} style={{ marginRight: 4 }} aria-hidden="true" />
+              )}
+              {a.label}
+            </button>
+          ))}
+        </div>
 
         <div className="form-row">
           <div className="form-field">
@@ -196,12 +314,13 @@ export default function PageCalculadora() {
 
         {semCaminho && (
           <div className="alert alert--error" role="alert">
-            Não existe caminho entre <strong>{origem}</strong> e <strong>{destino}</strong> na
-            malha atual. Tente outro par de aeroportos.
+            Não existe caminho entre <strong>{origem}</strong> e{" "}
+            <strong>{destino}</strong> na malha atual. Tente outro par de aeroportos.
           </div>
         )}
 
-        {temCaminho && (
+        {/* Single algorithm result */}
+        {temCaminho && algo !== "comparar" && (
           <>
             <div className="kpi-grid" style={{ marginTop: "var(--space-6)" }}>
               <div className="kpi-card">
@@ -222,16 +341,80 @@ export default function PageCalculadora() {
                 <div className="kpi-unit">intermediárias</div>
               </div>
             </div>
+            <PathDisplay path={resultado.path} />
+          </>
+        )}
 
-            <div className="result-path" aria-live="polite">
-              {resultado.path.map((node, i) => (
-                <span key={node}>
-                  <strong>{node}</strong>
-                  {i < resultado.path.length - 1 && (
-                    <span className="result-path-arrow">→</span>
-                  )}
-                </span>
-              ))}
+        {/* Comparison mode */}
+        {temComparacao && (
+          <>
+            <div className="two-col" style={{ marginTop: "var(--space-6)" }}>
+              <div>
+                <AlgoLabel label="Dijkstra" color="var(--color-primary)" />
+                <div className="kpi-grid">
+                  <div className="kpi-card">
+                    <div className="kpi-label">Custo total</div>
+                    <div className="kpi-value">
+                      {resultadoDijkstra.cost.toFixed(1)}
+                    </div>
+                    <div className="kpi-unit">peso acumulado</div>
+                  </div>
+                  <div className="kpi-card">
+                    <div className="kpi-label">Saltos</div>
+                    <div className="kpi-value">
+                      {resultadoDijkstra.path.length - 1}
+                    </div>
+                    <div className="kpi-unit">arestas</div>
+                  </div>
+                </div>
+                <PathDisplay path={resultadoDijkstra.path} />
+              </div>
+
+              <div>
+                <AlgoLabel label="Bellman-Ford" color="var(--color-accent)" />
+                <div className="kpi-grid">
+                  <div className="kpi-card">
+                    <div className="kpi-label">Custo total</div>
+                    <div className="kpi-value">
+                      {resultadoBF.cost.toFixed(1)}
+                    </div>
+                    <div className="kpi-unit">peso acumulado</div>
+                  </div>
+                  <div className="kpi-card">
+                    <div className="kpi-label">Saltos</div>
+                    <div className="kpi-value">
+                      {resultadoBF.path.length - 1}
+                    </div>
+                    <div className="kpi-unit">arestas</div>
+                  </div>
+                </div>
+                <PathDisplay
+                  path={resultadoBF.path}
+                  color="var(--color-accent)"
+                />
+              </div>
+            </div>
+
+            <div className="insight-box">
+              Dijkstra e Bellman-Ford produziram{" "}
+              <strong
+                style={{
+                  color: costasIguais
+                    ? "var(--color-success)"
+                    : "var(--color-danger)",
+                }}
+              >
+                {costasIguais ? "resultados idênticos" : "resultados diferentes"}
+              </strong>{" "}
+              — custo{" "}
+              <strong style={{ color: "var(--color-primary)" }}>
+                {resultadoDijkstra.cost.toFixed(1)}
+              </strong>{" "}
+              em{" "}
+              <strong>{resultadoDijkstra.path.length - 1}</strong> saltos. Em
+              grafos sem pesos negativos, ambos garantem o caminho mínimo; o
+              grafo abaixo destaca a rota{" "}
+              <span style={{ color: "var(--color-primary)" }}>Dijkstra</span>.
             </div>
           </>
         )}
@@ -241,16 +424,17 @@ export default function PageCalculadora() {
         <section className="section">
           <h2 className="section-title">
             Grafo interativo
-            {temCaminho && (
+            {(temCaminho || temComparacao) && (
               <span className="section-title-hint">
-                — arestas âmbar = rota calculada
+                — arestas âmbar ={" "}
+                {algo === "comparar" ? "rota Dijkstra" : `rota ${ALGOS.find((a) => a.id === algo)?.label}`}
               </span>
             )}
           </h2>
           <GrafoVis
             airports={airports}
             edges={edges}
-            highlightPath={resultado?.path ?? []}
+            highlightPath={highlightPath}
             regionMap={regionMap}
             grauMap={grauMap}
           />

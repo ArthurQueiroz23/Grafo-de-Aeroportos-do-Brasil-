@@ -153,6 +153,58 @@ function parseCSV(text) {
   });
 }
 
+function HubRanking({ graus }) {
+  const top = useMemo(() => {
+    return [...graus]
+      .sort((a, b) => parseInt(b.grau, 10) - parseInt(a.grau, 10))
+      .slice(0, 20);
+  }, [graus]);
+
+  if (!top.length) return <LoadingCenter label="Carregando hubs…" />;
+
+  const maxGrau = parseInt(top[0]?.grau, 10) || 1;
+
+  return (
+    <div className="rank-list">
+      {top.map((g, i) => {
+        const pct = (parseInt(g.grau, 10) / maxGrau) * 100;
+        const isTop = i < 3;
+        return (
+          <div key={g.aeroporto} className="rank-row">
+            <span className={`rank-pos${isTop ? " rank-pos--top" : ""}`}>
+              {i + 1}
+            </span>
+            <span className={`rank-code${isTop ? " rank-code--top" : ""}`}>
+              {g.aeroporto}
+            </span>
+            <div className="rank-bar-track">
+              <div
+                className="rank-bar-fill"
+                style={{ width: `${pct}%` }}
+              >
+                {pct > 28 ? g.grau : ""}
+              </div>
+            </div>
+            {pct <= 28 && (
+              <span
+                style={{
+                  fontSize: "var(--text-caption)",
+                  color: "var(--color-primary)",
+                  minWidth: 24,
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 600,
+                }}
+              >
+                {g.grau}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function PageMetricas() {
   const [tab, setTab] = useState("regioes");
   const [regioes, setRegioes] = useState([]);
@@ -173,6 +225,7 @@ export default function PageMetricas() {
     { id: "regioes", label: "Por Região" },
     { id: "ego", label: "Ego-redes" },
     { id: "ranking", label: "Ranking" },
+    { id: "hubs", label: "Top Hubs" },
     { id: "distribuicao", label: "Distribuição" },
   ];
 
@@ -292,6 +345,25 @@ export default function PageMetricas() {
                 service: "Aeroporto",
               }}
             />
+          )}
+        </section>
+      )}
+
+      {tab === "hubs" && (
+        <section className="section">
+          <h2 className="section-title">
+            <BarChart3 size={18} strokeWidth={1.75} aria-hidden="true" />
+            Top 20 — Hubs por Conectividade
+          </h2>
+          <p className="section-lead">
+            Aeroportos ordenados pelo número de conexões diretas (grau). Hubs com grau elevado
+            concentram a maior parte das rotas na malha — padrão típico de redes{" "}
+            <strong>livre de escala</strong>. Posições 1–3 destacadas em âmbar (Gestalt — figura-fundo).
+          </p>
+          {graus.length === 0 ? (
+            <LoadingCenter />
+          ) : (
+            <HubRanking graus={graus} />
           )}
         </section>
       )}

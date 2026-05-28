@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Network } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Network, TrendingUp } from "lucide-react";
 import GrafoVizPanel from "../components/GrafoVizPanel.jsx";
 import PageHeader from "../components/ui/PageHeader.jsx";
 import { SkeletonGraph, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
@@ -107,6 +107,14 @@ export default function PageGeral() {
     });
   }, []);
 
+  const topHubs = useMemo(() => {
+    if (!grauMap || Object.keys(grauMap).length === 0) return [];
+    return Object.entries(grauMap)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([id, grau]) => ({ id, grau }));
+  }, [grauMap]);
+
   const loadingKpis = !global;
 
   return (
@@ -155,6 +163,55 @@ export default function PageGeral() {
             </div>
           </div>
         </div>
+      )}
+
+      {topHubs.length > 0 && (
+        <section className="section">
+          <h2 className="section-title">
+            <TrendingUp size={18} strokeWidth={1.75} aria-hidden="true" />
+            Hubs em Destaque
+          </h2>
+          <p className="section-lead">
+            Os 5 aeroportos mais conectados da malha — concentram a maior parte das rotas diretas.
+          </p>
+          <div className="rank-list">
+            {topHubs.map((h, i) => {
+              const pct = (h.grau / topHubs[0].grau) * 100;
+              const isTop = i < 3;
+              return (
+                <div key={h.id} className="rank-row">
+                  <span className={`rank-pos${isTop ? " rank-pos--top" : ""}`}>
+                    {i + 1}
+                  </span>
+                  <span className={`rank-code${isTop ? " rank-code--top" : ""}`}>
+                    {h.id}
+                  </span>
+                  <div className="rank-bar-track">
+                    <div
+                      className="rank-bar-fill"
+                      style={{ width: `${pct}%` }}
+                    >
+                      {pct > 28 ? h.grau : ""}
+                    </div>
+                  </div>
+                  {pct <= 28 && (
+                    <span
+                      style={{
+                        fontSize: "var(--text-caption)",
+                        color: "var(--color-primary)",
+                        minWidth: 24,
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {h.grau}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       <section className="section">
