@@ -4,6 +4,7 @@ import PageHeader from "../components/ui/PageHeader.jsx";
 import AppButton from "../components/ui/AppButton.jsx";
 import AppBadge from "../components/ui/AppBadge.jsx";
 import Modal from "../components/ui/Modal.jsx";
+import ChartSequence from "../components/ChartSequence.jsx";
 
 const IMAGES = [
   {
@@ -11,36 +12,42 @@ const IMAGES = [
     label: "Distribuição de graus",
     cat: "Exploratória",
     variant: "accent",
+    desc: "Quantos aeroportos possuem cada grau de conectividade.",
   },
   {
     src: "/out/viz_bfs_camadas.png",
     label: "Camadas BFS",
     cat: "Exploratória",
     variant: "accent",
+    desc: "Quantos aeroportos estão a cada distância (em saltos) de GRU.",
   },
   {
     src: "/out/viz_ranking_graus.png",
     label: "Ranking de conectividade",
     cat: "Explanatória",
     variant: "primary",
+    desc: "Os aeroportos com maior número de conexões diretas.",
   },
   {
     src: "/out/viz_regioes_metricas.png",
     label: "Regiões — ordem e tamanho",
     cat: "Explanatória",
     variant: "primary",
+    desc: "Número de aeroportos e de rotas em cada região.",
   },
   {
     src: "/out/viz_regioes_densidade.png",
     label: "Regiões — densidade",
     cat: "Explanatória",
     variant: "primary",
+    desc: "Quão conectada internamente é cada região.",
   },
   {
     src: "/out/viz_subgrafo_maior_grau.png",
     label: "Subgrafo do maior grau (GRU)",
     cat: "Explanatória",
     variant: "primary",
+    desc: "As conexões diretas entre os principais hubs da malha.",
   },
 ];
 
@@ -118,6 +125,11 @@ export default function PageVisualizacoes() {
 
       <section className="section">
         <h2 className="section-title">Gráficos estatísticos</h2>
+        <p className="section-lead">
+          Cada gráfico abaixo é uma <strong>análise independente</strong> — eles
+          não formam uma sequência contínua nem dependem uns dos outros. A
+          numeração serve apenas para referência.
+        </p>
         <div className="legend-row" style={{ marginBottom: "var(--space-5)" }}>
           {CAT_LEGEND.map((c) => (
             <span key={c.cat} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
@@ -128,26 +140,8 @@ export default function PageVisualizacoes() {
             </span>
           ))}
         </div>
-        <div className="img-grid">
-          {IMAGES.map((img, i) => (
-            <article
-              key={img.src}
-              className="img-card"
-              style={{ animationDelay: `${i * 50}ms` }}
-              onClick={() => setModal(img)}
-              onKeyDown={(e) => e.key === "Enter" && setModal(img)}
-              role="button"
-              tabIndex={0}
-              aria-label={`Ampliar: ${img.label}`}
-            >
-              <img src={img.src} alt={img.label} loading="lazy" />
-              <div className="img-card-footer">
-                <span className="img-card-label">{img.label}</span>
-                <AppBadge variant={img.variant}>{img.cat}</AppBadge>
-              </div>
-            </article>
-          ))}
-        </div>
+
+        <ChartSequence images={IMAGES} onOpen={setModal} />
       </section>
 
       <Modal

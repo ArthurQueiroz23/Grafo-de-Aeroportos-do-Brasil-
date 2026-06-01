@@ -1,0 +1,78 @@
+[
+  {
+    "id": "aresta_negativa",
+    "titulo": "Aresta de peso negativo (sem ciclo)",
+    "descricao": "Existe uma aresta negativa (1 → 2 = -5), mas nenhum ciclo negativo. Bellman-Ford calcula a distancia correta (0 → 1 → 2 = -3, mais curto que 0 → 2 = 1). Dijkstra recusa o grafo porque sua precondicao (pesos nao negativos) foi violada.",
+    "fonte": 0,
+    "arestas": [
+      [
+        0,
+        1,
+        2.0
+      ],
+      [
+        0,
+        2,
+        1.0
+      ],
+      [
+        1,
+        2,
+        -5.0
+      ]
+    ],
+    "bellman_ford": {
+      "tem_ciclo_negativo": false,
+      "distancias": {
+        "0": 0.0,
+        "1": 2.0,
+        "2": -3.0
+      }
+    },
+    "dijkstra": {
+      "recusou": true,
+      "motivo": "dijkstra nao aceita peso negativo"
+    }
+  },
+  {
+    "id": "ciclo_negativo",
+    "titulo": "Ciclo de peso negativo",
+    "descricao": "O ciclo 1 → 2 → 1 soma peso negativo (-2 + 0.5 = -1.5), entao nao existe caminho minimo bem definido. Bellman-Ford detecta o ciclo negativo; Dijkstra recusa pesos negativos.",
+    "fonte": 0,
+    "arestas": [
+      [
+        0,
+        1,
+        1.0
+      ],
+      [
+        0,
+        3,
+        5.0
+      ],
+      [
+        1,
+        2,
+        -2.0
+      ],
+      [
+        2,
+        1,
+        0.5
+      ]
+    ],
+    "bellman_ford": {
+      "tem_ciclo_negativo": true,
+      "distancias": {
+        "0": 0.0,
+        "1": -3.5,
+        "2": -4.0,
+        "3": 5.0
+      }
+    },
+    "dijkstra": {
+      "recusou": true,
+      "motivo": "dijkstra nao aceita peso negativo"
+    }
+  }
+]

@@ -9,7 +9,6 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import pandas as pd
 
 from .algorithms import (
@@ -45,18 +44,94 @@ def _path_edges(path: List[str]) -> Set[Tuple[str, str]]:
     return edges
 
 
+_C_BG = "#0f1419"
+_C_TEXT = "#eef1f5"
+_C_MUTED = "#8b929b"
+_C_GRID = "#222b36"
+_C_PRIMARY = "#e8a838"
+_C_ACCENT = "#3d9b8f"
+
+_REGION_COLORS = {
+    "Norte": "#6b9fd4",
+    "Nordeste": "#3d9b8f",
+    "Centro-Oeste": "#e8a838",
+    "Sudeste": "#9aa8b8",
+    "Sul": "#d4716a",
+}
+
+
 def _matplotlib_style():
 
-    # estilo simples
     plt.rcParams.update(
         {
-            "figure.facecolor": "white",
-            "axes.facecolor": "#fafafa",
-            "axes.grid": True,
-            "grid.alpha": 0.25,
-            "font.size": 10,
+            "figure.facecolor": _C_BG,
+            "axes.facecolor": _C_BG,
+            "savefig.facecolor": _C_BG,
+            "axes.grid": False,
+            "font.family": "sans-serif",
+            "font.sans-serif": [
+                "DM Sans",
+                "Segoe UI",
+                "Arial",
+                "DejaVu Sans",
+            ],
+            "font.size": 16,
+            "text.color": _C_TEXT,
+            "axes.titlesize": 24,
+            "axes.titleweight": "bold",
+            "axes.titlecolor": _C_TEXT,
+            "axes.titlepad": 12,
+            "axes.labelsize": 19,
+            "axes.labelweight": "bold",
+            "axes.labelcolor": _C_TEXT,
+            "axes.edgecolor": _C_GRID,
+            "xtick.labelsize": 16,
+            "ytick.labelsize": 16,
+            "xtick.color": _C_MUTED,
+            "ytick.color": _C_MUTED,
+            "legend.fontsize": 16,
+            "axes.spines.top": False,
+            "axes.spines.right": False,
         }
     )
+
+
+def _save(fig, out_path):
+
+    fig.tight_layout(pad=0.3)
+
+    fig.savefig(
+        out_path,
+        dpi=150,
+        bbox_inches="tight",
+        pad_inches=0.12,
+        facecolor=_C_BG,
+    )
+
+    plt.close(fig)
+
+
+def _rotulos_barras_v(ax, valores, *, fmt="{:.0f}", dy=0.01):
+
+    if not len(valores):
+        return
+
+    topo = max(valores)
+
+    for retangulo, val in zip(ax.patches, valores):
+
+        x = retangulo.get_x() + retangulo.get_width() / 2
+
+        ax.text(
+            x,
+            retangulo.get_height() + topo * dy,
+            fmt.format(val),
+            ha="center",
+            va="bottom",
+            fontsize=15,
+            fontweight="bold",
+            color=_C_TEXT,
+        )
 
 
 def plot_distribuicao_graus(
@@ -66,35 +141,29 @@ def plot_distribuicao_graus(
 
     _matplotlib_style()
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(9, 5.5))
 
     maior = int(df_graus["grau"].max())
 
-    ax.hist(
+    counts, _, _ = ax.hist(
         df_graus["grau"],
         bins=range(0, maior + 2),
-        color="#4c72b0",
-        edgecolor="white",
+        color=_C_ACCENT,
+        edgecolor=_C_BG,
+        linewidth=1.5,
     )
 
     ax.set_title("Distribuição dos Graus")
 
     ax.set_xlabel("Grau")
 
-    ax.set_ylabel("Quantidade")
+    ax.set_ylabel("Quantidade de aeroportos")
 
-    legenda = mpatches.Patch(
-        color="#4c72b0",
-        label="Quantidade de aeroportos",
-    )
+    ax.margins(x=0.01)
 
-    ax.legend(handles=[legenda])
+    _rotulos_barras_v(ax, counts)
 
-    fig.tight_layout()
-
-    fig.savefig(out_path, dpi=150)
-
-    plt.close(fig)
+    _save(fig, out_path)
 
 
 def plot_ranking_graus(
@@ -111,13 +180,15 @@ def plot_ranking_graus(
         .head(top_n)
     )
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(9, 7))
 
     ax.barh(
         top["aeroporto"],
         top["grau"],
-        color="#55a868",
+        color=_C_PRIMARY,
     )
+
+    ax.invert_yaxis()
 
     ax.set_title("Aeroportos Mais Conectados")
 
@@ -125,11 +196,23 @@ def plot_ranking_graus(
 
     ax.set_ylabel("Aeroporto")
 
-    fig.tight_layout()
+    ax.margins(y=0.01)
 
-    fig.savefig(out_path, dpi=150)
+    graus_top = list(top["grau"])
 
-    plt.close(fig)
+    for retangulo, val in zip(ax.patches, graus_top):
+
+        ax.text(
+            retangulo.get_width() + max(graus_top) * 0.01,
+            retangulo.get_y() + retangulo.get_height() / 2,
+            str(int(val)),
+            va="center",
+            fontsize=15,
+            fontweight="bold",
+            color=_C_TEXT,
+        )
+
+    _save(fig, out_path)
 
 
 def plot_regioes_metricas(
@@ -157,15 +240,16 @@ def plot_regioes_metricas(
 
     x = range(len(regioes))
 
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(10, 5.5))
 
-    largura = 0.3
+    largura = 0.38
 
     ax.bar(
         [i - largura / 2 for i in x],
         ordens,
         width=largura,
         label="Ordem",
+        color=_C_PRIMARY,
     )
 
     ax.bar(
@@ -173,6 +257,7 @@ def plot_regioes_metricas(
         tamanhos,
         width=largura,
         label="Tamanho",
+        color=_C_ACCENT,
     )
 
     ax.set_xticks(list(x))
@@ -183,13 +268,19 @@ def plot_regioes_metricas(
         "Ordem e Tamanho por Região"
     )
 
-    ax.legend()
+    ax.set_ylabel("Quantidade")
 
-    fig.tight_layout()
+    ax.margins(x=0.02)
 
-    fig.savefig(out_path, dpi=150)
+    _rotulos_barras_v(ax, ordens + tamanhos)
 
-    plt.close(fig)
+    ax.legend(
+        facecolor="#161d26",
+        edgecolor=_C_GRID,
+        labelcolor=_C_TEXT,
+    )
+
+    _save(fig, out_path)
 
 
 def plot_regioes_densidade(
@@ -213,12 +304,17 @@ def plot_regioes_densidade(
         regioes.append(item["regiao"])
         densidades.append(item["densidade"])
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+
+    cores = [
+        _REGION_COLORS.get(r, _C_ACCENT)
+        for r in regioes
+    ]
 
     ax.bar(
         regioes,
         densidades,
-        color="#8172b3",
+        color=cores,
     )
 
     ax.set_title("Densidade por Região")
@@ -227,20 +323,17 @@ def plot_regioes_densidade(
 
     ax.set_ylabel("Densidade")
 
-    for i in range(len(densidades)):
+    if densidades:
+        ax.set_ylim(0, max(densidades) * 1.18)
 
-        ax.text(
-            i,
-            densidades[i] + 0.002,
-            f"{densidades[i]:.3f}",
-            ha="center",
-        )
+    _rotulos_barras_v(
+        ax,
+        densidades,
+        fmt="{:.3f}",
+        dy=0.02,
+    )
 
-    fig.tight_layout()
-
-    fig.savefig(out_path, dpi=150)
-
-    plt.close(fig)
+    _save(fig, out_path)
 
 
 def plot_bfs_camadas(
@@ -272,29 +365,30 @@ def plot_bfs_camadas(
     for x in xs:
         ys.append(camadas[x])
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(9, 5.5))
 
     ax.bar(
         [str(x) for x in xs],
         ys,
-        color="#ccb974",
+        color=_C_ACCENT,
     )
 
     ax.set_title(
         f"BFS a partir de {fonte}"
     )
 
-    ax.set_xlabel("Distância")
+    ax.set_xlabel("Distância (saltos)")
 
     ax.set_ylabel(
         "Quantidade de aeroportos"
     )
 
-    fig.tight_layout()
+    if ys:
+        ax.set_ylim(0, max(ys) * 1.18)
 
-    fig.savefig(out_path, dpi=150)
+    _rotulos_barras_v(ax, ys)
 
-    plt.close(fig)
+    _save(fig, out_path)
 
 
 def plot_subgrafo_maior_grau(
@@ -352,7 +446,7 @@ def plot_subgrafo_maior_grau(
         )
 
     fig, ax = plt.subplots(
-        figsize=(9, 9)
+        figsize=(8.5, 8.5)
     )
 
     for u, v, w in arestas:
@@ -363,8 +457,8 @@ def plot_subgrafo_maior_grau(
         ax.plot(
             [x0, x1],
             [y0, y1],
-            lw=1 + w * 0.5,
-            color="#cccccc",
+            lw=1.5 + w * 0.8,
+            color="#5d6b7d",
         )
 
     for aeroporto in top:
@@ -372,14 +466,17 @@ def plot_subgrafo_maior_grau(
         x, y = posicoes[aeroporto]
 
         tamanho = (
-            300 + graus[aeroporto] * 120
+            900 + graus[aeroporto] * 220
         )
 
         ax.scatter(
             x,
             y,
             s=tamanho,
-            color="#4c72b0",
+            color=_C_PRIMARY,
+            edgecolors=_C_BG,
+            linewidths=2,
+            zorder=3,
         )
 
         ax.text(
@@ -388,21 +485,25 @@ def plot_subgrafo_maior_grau(
             aeroporto,
             ha="center",
             va="center",
-            color="white",
+            color=_C_BG,
             fontweight="bold",
+            fontsize=17,
+            zorder=4,
         )
 
     ax.set_title(
         "Subgrafo dos Aeroportos Mais Conectados"
     )
 
+    ax.set_aspect("equal")
+
+    ax.set_xlim(-1.25, 1.25)
+
+    ax.set_ylim(-1.25, 1.25)
+
     ax.axis("off")
 
-    fig.tight_layout()
-
-    fig.savefig(out_path, dpi=150)
-
-    plt.close(fig)
+    _save(fig, out_path)
 
 
 def run_all_visualizations(root: Path):

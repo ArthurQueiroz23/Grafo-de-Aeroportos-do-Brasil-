@@ -22,10 +22,16 @@ from .directed_algorithms import (
 
 from .snap_road import build_snap_ca_subgraph
 
+from .viz import (
+    _matplotlib_style,
+    _save,
+    _rotulos_barras_v,
+    _C_ACCENT,
+)
+
 
 def _densidade_dirigida(n: int, m: int) -> float:
 
-    # calc densidade
     if n < 2:
         return 0.0
 
@@ -34,7 +40,6 @@ def _densidade_dirigida(n: int, m: int) -> float:
 
 def _pares_rota(vertices: Sequence[int]) -> List[Tuple[int, int]]:
 
-    # gera pares teste
     vs = sorted(vertices)
 
     if len(vs) < 2:
@@ -83,78 +88,77 @@ def _pares_rota(vertices: Sequence[int]) -> List[Tuple[int, int]]:
 
 def _plot_grau_saida(out_path: Path, graus: Counter):
 
-    # grafico graus
-    fig, ax = plt.subplots(figsize=(8, 5))
+    _matplotlib_style()
+
+    fig, ax = plt.subplots(figsize=(9, 5.5))
 
     xs = sorted(graus.keys())
 
     ys = [graus[k] for k in xs]
 
-    ax.bar([str(x) for x in xs], ys)
+    ax.bar([str(x) for x in xs], ys, color=_C_ACCENT)
 
-    ax.set_title("Distribuicao grau saida")
+    ax.set_title("Distribuição do Grau de Saída")
 
-    ax.set_xlabel("Grau")
+    ax.set_xlabel("Grau de saída")
 
-    ax.set_ylabel("Qtd nos")
+    ax.set_ylabel("Quantidade de nós")
 
-    fig.tight_layout()
+    if ys:
+        ax.set_ylim(0, max(ys) * 1.18)
 
-    fig.savefig(out_path, dpi=150)
+    _rotulos_barras_v(ax, ys)
 
-    plt.close(fig)
+    _save(fig, out_path)
 
 
 def _plot_bfs_camadas(out_path: Path, camadas: dict, fonte: int):
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    _matplotlib_style()
+
+    fig, ax = plt.subplots(figsize=(9, 5.5))
 
     xs = sorted(int(k) for k in camadas.keys())
 
     ys = [camadas[str(k)] for k in xs]
 
-    ax.bar([str(x) for x in xs], ys, color="#4da3ff")
+    ax.bar([str(x) for x in xs], ys, color=_C_ACCENT)
 
-    ax.set_title(f"BFS (dirigido) — camadas a partir do no {fonte}")
+    ax.set_title(f"BFS dirigido — camadas a partir do nó {fonte}")
 
-    ax.set_xlabel("Distancia (camada)")
+    ax.set_xlabel("Distância (camada)")
 
-    ax.set_ylabel("Quantidade de nos")
+    ax.set_ylabel("Quantidade de nós")
 
-    fig.tight_layout()
+    if ys:
+        ax.set_ylim(0, max(ys) * 1.18)
 
-    fig.savefig(out_path, dpi=150)
+    if len(ys) <= 15:
+        _rotulos_barras_v(ax, ys)
 
-    plt.close(fig)
+    _save(fig, out_path)
 
 
 def _grafo_demo_neg():
 
-    # teste peso negativo
     g = {}
 
     g[0] = {
-        1: 4.0,
-        2: 5.0
+        1: 2.0,
+        2: 1.0
     }
 
     g[1] = {
-        2: 1.0,
-        3: -2.0
+        2: -5.0
     }
 
-    g[2] = {
-        3: 1.0
-    }
-
-    g[3] = {}
+    g[2] = {}
 
     return g
 
 
 def _grafo_demo_ciclo():
 
-    # teste ciclo negativo
     g = {}
 
     g[0] = {
@@ -175,9 +179,108 @@ def _grafo_demo_ciclo():
     return g
 
 
+def _num_json(x):
+
+    if x == float("inf"):
+        return None
+
+    return x
+
+
+def _arestas_lista(g):
+
+    out = []
+
+    for u in g:
+
+        for v, w in g[u].items():
+
+            out.append([u, v, w])
+
+    return out
+
+
+def _rodar_uma_demo(g, fonte, id_demo, titulo, descricao):
+
+    item = {
+        "id": id_demo,
+        "titulo": titulo,
+        "descricao": descricao,
+        "fonte": fonte,
+        "arestas": _arestas_lista(g),
+    }
+
+    dist_bf, _, neg = bellman_ford_digraph(g, fonte)
+
+    item["bellman_ford"] = {
+        "tem_ciclo_negativo": neg,
+        "distancias": {
+            str(k): _num_json(v)
+            for k, v in sorted(dist_bf.items())
+        },
+    }
+
+    try:
+
+        dist_dj, _ = dijkstra_digraph(g, fonte)
+
+        item["dijkstra"] = {
+            "recusou": False,
+            "distancias": {
+                str(k): _num_json(v)
+                for k, v in sorted(dist_dj.items())
+            },
+        }
+
+    except ValueError as e:
+
+        item["dijkstra"] = {
+            "recusou": True,
+            "motivo": str(e),
+        }
+
+    return item
+
+
+def _rodar_demos_pesos_negativos():
+
+    demos = []
+
+    demos.append(
+        _rodar_uma_demo(
+            _grafo_demo_neg(),
+            fonte=0,
+            id_demo="aresta_negativa",
+            titulo="Aresta de peso negativo (sem ciclo)",
+            descricao=(
+                "Existe uma aresta negativa (1 → 2 = -5), mas nenhum ciclo "
+                "negativo. Bellman-Ford calcula a distancia correta "
+                "(0 → 1 → 2 = -3, mais curto que 0 → 2 = 1). Dijkstra recusa "
+                "o grafo porque sua precondicao (pesos nao negativos) foi "
+                "violada."
+            ),
+        )
+    )
+
+    demos.append(
+        _rodar_uma_demo(
+            _grafo_demo_ciclo(),
+            fonte=0,
+            id_demo="ciclo_negativo",
+            titulo="Ciclo de peso negativo",
+            descricao=(
+                "O ciclo 1 → 2 → 1 soma peso negativo (-2 + 0.5 = -1.5), "
+                "entao nao existe caminho minimo bem definido. Bellman-Ford "
+                "detecta o ciclo negativo; Dijkstra recusa pesos negativos."
+            ),
+        )
+    )
+
+    return demos
+
+
 def _bfs_camadas(g, fonte):
 
-    # bfs normal
     dist = {
         fonte: 0
     }
@@ -210,7 +313,6 @@ def _bfs_camadas(g, fonte):
 
 def _subgrafo_induzido(g, nos):
 
-    # cria subgrafo
     sub = {}
 
     nos_set = set(nos)
@@ -393,6 +495,17 @@ def run_parte2(
             bfs_res[0]["camadas"],
             bfs_res[0]["fonte"],
         )
+
+    demos_neg = _rodar_demos_pesos_negativos()
+
+    (out / "demos_pesos_negativos.json").write_text(
+        json.dumps(
+            demos_neg,
+            indent=2,
+            ensure_ascii=False
+        ),
+        encoding="utf-8",
+    )
 
     pares = _pares_rota(list(V))
 

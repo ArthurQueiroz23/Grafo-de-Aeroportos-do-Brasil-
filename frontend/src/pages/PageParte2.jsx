@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
-import { Microscope, Terminal } from "lucide-react";
+import {
+  Microscope,
+  Terminal,
+  Ban,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
 import PageHeader from "../components/ui/PageHeader.jsx";
-import AppBadge from "../components/ui/AppBadge.jsx";
 import { InteractiveListTable } from "../components/ui/interactive-logs-table-shadcnui.jsx";
 import { mapComparacaoBfDijkstra } from "../lib/interactive-list-adapters.js";
 import Modal from "../components/ui/Modal.jsx";
 import EmptyState from "../components/ui/EmptyState.jsx";
+import ChartSequence from "../components/ChartSequence.jsx";
 import { LoadingCenter, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
 import { CHART } from "../constants/theme.js";
 
@@ -15,12 +21,14 @@ const VIZ_IMAGES = [
     label: "Distribuição do grau de saída",
     cat: "Exploratória",
     variant: "accent",
+    desc: "Quantos nós da rede possuem cada quantidade de arestas de saída.",
   },
   {
     src: "/out/parte2/viz_parte2_bfs_camadas.png",
     label: "Camadas BFS (subgrafo SNAP)",
     cat: "Exploratória",
     variant: "accent",
+    desc: "Quantos nós estão a cada distância (em saltos) da fonte do BFS.",
   },
 ];
 
@@ -168,11 +176,143 @@ function TimeBarchart({ label, dijVal, bfVal, gradId }) {
   );
 }
 
+function fmtDist(d) {
+  if (d === null || d === undefined) return "∞";
+  return Number(d).toFixed(1);
+}
+
+function ResultadoBF({ bf }) {
+  const cicloNeg = bf?.tem_ciclo_negativo;
+  return (
+    <div style={{ flex: 1, minWidth: 220 }}>
+      <div
+        style={{
+          fontSize: "var(--text-caption)",
+          fontWeight: 700,
+          color: "var(--color-accent)",
+          textTransform: "uppercase",
+          letterSpacing: "var(--tracking-wide)",
+          marginBottom: "var(--space-3)",
+        }}
+      >
+        Bellman-Ford
+      </div>
+      {cicloNeg ? (
+        <div
+          className="alert alert--warning"
+          role="status"
+          style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}
+        >
+          <AlertTriangle size={16} aria-hidden="true" />
+          <span>
+            <strong>Ciclo negativo detectado.</strong> Não existe caminho mínimo
+            bem definido — o algoritmo sinaliza o problema em vez de devolver um
+            valor errado.
+          </span>
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--space-2)",
+              alignItems: "center",
+              color: "var(--color-success)",
+              fontWeight: 600,
+              marginBottom: "var(--space-3)",
+              fontSize: "var(--text-caption)",
+            }}
+          >
+            <CheckCircle2 size={16} aria-hidden="true" />
+            Distâncias mínimas calculadas
+          </div>
+          {Object.entries(bf?.distancias || {}).map(([no, d]) => (
+            <div className="info-row" key={no}>
+              <span className="info-key mono">nó {no}</span>
+              <span className="info-val mono">{fmtDist(d)}</span>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function ResultadoDijkstra({ dijkstra }) {
+  return (
+    <div style={{ flex: 1, minWidth: 220 }}>
+      <div
+        style={{
+          fontSize: "var(--text-caption)",
+          fontWeight: 700,
+          color: "var(--color-primary)",
+          textTransform: "uppercase",
+          letterSpacing: "var(--tracking-wide)",
+          marginBottom: "var(--space-3)",
+        }}
+      >
+        Dijkstra
+      </div>
+      {dijkstra?.recusou ? (
+        <div
+          className="alert alert--error"
+          role="status"
+          style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}
+        >
+          <Ban size={16} aria-hidden="true" />
+          <span>
+            <strong>Recusou o grafo.</strong> {dijkstra.motivo}. Dijkstra assume
+            pesos não negativos como precondição.
+          </span>
+        </div>
+      ) : (
+        Object.entries(dijkstra?.distancias || {}).map(([no, d]) => (
+          <div className="info-row" key={no}>
+            <span className="info-key mono">nó {no}</span>
+            <span className="info-val mono">{fmtDist(d)}</span>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function DemoCard({ demo }) {
+  return (
+    <section className="section">
+      <h2 className="section-title">{demo.titulo}</h2>
+      <p className="section-lead">{demo.descricao}</p>
+
+      <div className="info-row">
+        <span className="info-key">Arestas (origem → destino : peso)</span>
+        <span className="info-val mono">
+          {(demo.arestas || [])
+            .map(([u, v, w]) => `${u}→${v}:${w}`)
+            .join("  ·  ")}
+        </span>
+      </div>
+      <div className="info-row">
+        <span className="info-key">Fonte</span>
+        <span className="info-val mono">{demo.fonte}</span>
+      </div>
+
+      <div
+        className="two-col"
+        style={{ marginTop: "var(--space-5)", alignItems: "flex-start" }}
+      >
+        <ResultadoBF bf={demo.bellman_ford} />
+        <ResultadoDijkstra dijkstra={demo.dijkstra} />
+      </div>
+    </section>
+  );
+}
+
 export default function PageParte2() {
   const [sub, setSub] = useState(null);
   const [cmpRows, setCmpRows] = useState([]);
   const [timing, setTiming] = useState(null);
   const [exploracao, setExploracao] = useState(null);
+  const [demos, setDemos] = useState(null);
   const [modal, setModal] = useState(null);
   const [vizDisponiveis, setVizDisponiveis] = useState(null);
 
@@ -180,6 +320,11 @@ export default function PageParte2() {
     fetch("/out/parte2/subgrafo_metricas.json")
       .then((r) => r.json())
       .then(setSub)
+      .catch(() => {});
+
+    fetch("/out/parte2/demos_pesos_negativos.json")
+      .then((r) => r.json())
+      .then(setDemos)
       .catch(() => {});
 
     fetch("/out/parte2/exploracao_bfs_dfs.json")
@@ -300,25 +445,7 @@ export default function PageParte2() {
         {vizDisponiveis === null ? (
           <LoadingCenter label="Verificando visualizações…" />
         ) : vizDisponiveis.length > 0 ? (
-          <div className="img-grid">
-            {vizDisponiveis.map((img, i) => (
-              <article
-                key={img.src}
-                className="img-card"
-                style={{ animationDelay: `${i * 50}ms` }}
-                onClick={() => setModal(img)}
-                role="button"
-                tabIndex={0}
-                aria-label={`Ampliar: ${img.label}`}
-              >
-                <img src={img.src} alt={img.label} loading="lazy" />
-                <div className="img-card-footer">
-                  <span className="img-card-label">{img.label}</span>
-                  <AppBadge variant={img.variant}>{img.cat}</AppBadge>
-                </div>
-              </article>
-            ))}
-          </div>
+          <ChartSequence images={vizDisponiveis} onOpen={setModal} />
         ) : (
           <EmptyState
             icon={Terminal}
@@ -471,6 +598,26 @@ export default function PageParte2() {
           </div>
         )}
       </section>
+
+      {demos && demos.length > 0 && (
+        <>
+          <section className="section" style={{ marginBottom: "var(--space-3)" }}>
+            <h2 className="section-title">
+              <AlertTriangle size={18} strokeWidth={1.75} aria-hidden="true" />
+              Por que dois algoritmos? — pesos negativos
+            </h2>
+            <p className="section-lead">
+              No subgrafo SNAP todos os pesos são positivos, então Dijkstra e
+              Bellman-Ford sempre concordam. Os dois grafos-demonstração abaixo
+              expõem o cenário onde eles divergem — exatamente o que justifica a
+              existência do Bellman-Ford.
+            </p>
+          </section>
+          {demos.map((demo) => (
+            <DemoCard key={demo.id} demo={demo} />
+          ))}
+        </>
+      )}
 
       <section className="section">
         <h2 className="section-title">Comparação BF × Dijkstra (primeiros 20 pares)</h2>
