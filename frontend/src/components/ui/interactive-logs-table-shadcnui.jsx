@@ -48,7 +48,7 @@ function ListRow({ item, expanded, onToggle }) {
       <motion.button
         type="button"
         onClick={onToggle}
-        className="w-full p-4 text-left transition-colors hover:bg-muted/50 active:bg-muted/70"
+        className="w-full p-5 text-left transition-colors hover:bg-muted/50 active:bg-muted/70"
       >
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <motion.div
@@ -73,7 +73,7 @@ function ListRow({ item, expanded, onToggle }) {
             </span>
           )}
 
-          <span className="min-w-max flex-shrink-0 text-sm font-medium text-foreground">
+          <span className="min-w-max flex-shrink-0 text-base font-medium text-foreground">
             {item.primary}
           </span>
 
@@ -83,7 +83,7 @@ function ListRow({ item, expanded, onToggle }) {
 
           <span
             className={cn(
-              "flex-shrink-0 font-mono text-sm font-semibold",
+              "flex-shrink-0 font-mono text-base font-semibold",
               item.status?.className ?? "text-muted-foreground",
             )}
           >
@@ -91,7 +91,7 @@ function ListRow({ item, expanded, onToggle }) {
           </span>
 
           {item.detail && (
-            <span className="w-20 flex-shrink-0 text-right font-mono text-xs text-muted-foreground sm:w-24">
+            <span className="w-24 flex-shrink-0 text-right font-mono text-sm text-muted-foreground sm:w-28">
               {item.detail}
             </span>
           )}
@@ -290,10 +290,10 @@ export function InteractiveListTable({
         className,
       )}
     >
-      <div className="border-b border-border p-4 sm:p-6">
+      <div className="border-b border-border p-5 sm:p-6">
         <div className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-foreground sm:text-xl">{title}</h2>
+            <h2 className="text-xl font-semibold text-foreground sm:text-2xl">{title}</h2>
             <p className="text-sm text-muted-foreground">{resolvedSubtitle}</p>
           </div>
 
@@ -325,7 +325,7 @@ export function InteractiveListTable({
         </div>
       </div>
 
-      <div className="flex min-h-[320px] max-h-[min(70vh,640px)] flex-1 overflow-hidden">
+      <div className="flex min-h-[480px] max-h-[min(82vh,920px)] flex-1 overflow-hidden">
         <AnimatePresence initial={false}>
           {showFilters && (
             <motion.div
