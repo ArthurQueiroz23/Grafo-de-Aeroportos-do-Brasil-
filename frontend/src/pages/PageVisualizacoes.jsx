@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { ImageIcon, ExternalLink } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader.jsx";
-import AppButton from "../components/ui/AppButton.jsx";
 import AppBadge from "../components/ui/AppBadge.jsx";
 import Modal from "../components/ui/Modal.jsx";
 import ChartSequence from "../components/ChartSequence.jsx";
@@ -66,65 +65,20 @@ const CAT_LEGEND = [
 
 export default function PageVisualizacoes() {
   const [modal, setModal] = useState(null);
-  const [showInteractive, setShowInteractive] = useState(false);
 
   return (
     <>
       <PageHeader
         eyebrow="Outputs da análise"
         title="Visualizações"
-        subtitle="Gráficos exploratórios e explicativos gerados pela análise, além do grafo interativo PyVis."
+        subtitle="Gráficos exploratórios e explanatórios gerados pela análise estatística da malha de aeroportos brasileiros."
       />
 
       <section className="section">
         <h2 className="section-title">
           <ImageIcon size={18} strokeWidth={1.75} aria-hidden="true" />
-          Grafo interativo (PyVis)
+          Gráficos estatísticos
         </h2>
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--space-3)",
-            marginBottom: "var(--space-5)",
-            flexWrap: "wrap",
-          }}
-        >
-          <AppButton
-            variant="primary"
-            onClick={() => setShowInteractive((v) => !v)}
-          >
-            {showInteractive ? "Ocultar grafo" : "Abrir grafo interativo"}
-          </AppButton>
-          <AppButton
-            as="a"
-            variant="secondary"
-            href="/out/grafo_interativo.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Nova aba
-            <ExternalLink size={14} aria-hidden="true" />
-          </AppButton>
-          <AppButton
-            as="a"
-            variant="ghost"
-            href="/out/arvore_percurso.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Árvore DFS
-            <ExternalLink size={14} aria-hidden="true" />
-          </AppButton>
-        </div>
-        {showInteractive && (
-          <div className="iframe-wrap">
-            <iframe src="/out/grafo_interativo.html" title="Grafo interativo PyVis" />
-          </div>
-        )}
-      </section>
-
-      <section className="section">
-        <h2 className="section-title">Gráficos estatísticos</h2>
         <p className="section-lead">
           Cada gráfico abaixo é uma <strong>análise independente</strong> — eles
           não formam uma sequência contínua nem dependem uns dos outros. A
@@ -132,9 +86,17 @@ export default function PageVisualizacoes() {
         </p>
         <div className="legend-row" style={{ marginBottom: "var(--space-5)" }}>
           {CAT_LEGEND.map((c) => (
-            <span key={c.cat} style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+            <span
+              key={c.cat}
+              style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+            >
               <AppBadge variant={c.variant}>{c.cat}</AppBadge>
-              <span style={{ fontSize: "var(--text-caption)", color: "var(--color-text-muted)" }}>
+              <span
+                style={{
+                  fontSize: "var(--text-caption)",
+                  color: "var(--color-text-muted)",
+                }}
+              >
                 {c.desc}
               </span>
             </span>
@@ -149,9 +111,7 @@ export default function PageVisualizacoes() {
         onClose={() => setModal(null)}
         caption={modal ? `${modal.label} — pressione Esc ou clique fora para fechar` : ""}
       >
-        {modal && (
-          <img src={modal.src} alt={modal.label} />
-        )}
+        {modal && <img src={modal.src} alt={modal.label} />}
       </Modal>
     </>
   );

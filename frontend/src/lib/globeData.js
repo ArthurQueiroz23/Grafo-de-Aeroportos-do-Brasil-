@@ -47,12 +47,12 @@ export function buildGlobeMarkers(
       const regiao = regionMap[a.id] || "";
       const hex = REGION_HEX[regiao] || "#9aa8b8";
       const isSelected = selectedId === a.id;
-      const baseSize = 0.01 + (grau / maxGrau) * 0.016;
+      const baseSize = 0.012 + (grau / maxGrau) * 0.020;
       return {
         id: a.id,
         location,
         region: a.id,
-        size: isSelected ? baseSize * 1.35 : baseSize,
+        size: isSelected ? baseSize * 1.45 : baseSize,
         color: hexToRgb01(hex),
         selected: isSelected,
       };
@@ -79,15 +79,15 @@ export function buildGlobeArcs(edges, mandatoryPairs = [], pathPairs = []) {
       let color;
 
       if (pathSet.has(key)) {
-        color = hexToRgb01("#e8a838");
+        color = hexToRgb01("#f2be5a");
       } else if (mandSet.has(key)) {
         color = hexToRgb01("#e88b84");
       } else if (w >= 2.5) {
-        color = hexToRgb01("#3d9b8f");
+        color = hexToRgb01("#4db8aa");
       } else if (w >= 1.8) {
-        color = hexToRgb01("#e8a838");
+        color = hexToRgb01("#f0b545");
       } else {
-        color = [0.42, 0.5, 0.58];
+        color = [0.52, 0.60, 0.72];
       }
 
       return {

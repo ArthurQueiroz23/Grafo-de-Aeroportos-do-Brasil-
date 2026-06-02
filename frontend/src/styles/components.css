@@ -1,7 +1,7 @@
 /* ── Page header ── */
 .page-header {
   margin-bottom: var(--space-8);
-  max-width: 52ch;
+  max-width: 72ch;
 }
 
 .page-eyebrow {
@@ -32,8 +32,8 @@
 /* ── KPI grid ── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-5);
   margin-bottom: var(--space-8);
 }
 
@@ -41,7 +41,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
+  padding: var(--space-6) var(--space-6) var(--space-5);
   position: relative;
   overflow: hidden;
   transition:
@@ -86,7 +86,7 @@
 
 .kpi-value {
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 1.4rem + 1vw, 2.125rem);
+  font-size: clamp(1.875rem, 1.5rem + 1.1vw, 2.25rem);
   font-weight: 400;
   line-height: 1;
   color: var(--color-text);
@@ -142,7 +142,7 @@
   color: var(--color-text-muted);
   margin-bottom: var(--space-5);
   line-height: var(--leading-normal);
-  max-width: 65ch;
+  max-width: 75ch;
 }
 
 /* ── Buttons ── */
@@ -634,7 +634,7 @@
 /* ── Results ── */
 .result-path {
   margin-top: var(--space-4);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-5) var(--space-6);
   background: var(--color-surface-elevated);
   border: 1px solid var(--color-border-strong);
   border-left: 3px solid var(--color-primary);
@@ -643,8 +643,12 @@
   font-size: var(--text-h3);
   color: var(--color-text);
   letter-spacing: 0.04em;
-  word-break: break-all;
-  line-height: 1.7;
+  word-break: break-word;
+  line-height: 1.8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
 }
 
 .result-path-arrow {
@@ -755,13 +759,13 @@
 }
 
 .globe-rotas--solo {
-  max-width: min(760px, 100%);
+  max-width: min(860px, 100%);
   margin: 0 auto;
   width: 100%;
 }
 
 .globe-rotas--solo .globe-rotas__canvas {
-  max-width: min(680px, 100%);
+  max-width: min(760px, 100%);
   margin: 0 auto;
 }
 
@@ -796,7 +800,7 @@
 
 .globe-rotas--solo .globe-rotas__canvas {
   padding: var(--space-4);
-  min-height: min(68vh, 620px);
+  min-height: min(72vh, 680px);
 }
 
 .globe-rotas__hint-bar {
@@ -892,7 +896,7 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  height: min(620px, 68vh);
+  height: min(680px, 74vh);
   cursor: default;
   touch-action: none;
 }
@@ -1235,8 +1239,8 @@
 
 .skeleton-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-5);
   margin-bottom: var(--space-8);
 }
 
@@ -1317,6 +1321,88 @@
   font-size: var(--text-body);
   color: var(--color-text-muted);
   line-height: var(--leading-normal);
+}
+
+/* ── Page content animation ── */
+/* ── Route finder (PageGeral) ── */
+.route-finder {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-5);
+}
+
+.route-finder__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: var(--space-4);
+}
+
+.route-finder__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-end;
+}
+
+.route-finder__path-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+
+.path-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-muted);
+  border: 1px solid rgba(232, 168, 56, 0.28);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-3);
+  letter-spacing: 0.04em;
+}
+
+.path-meta-chip--dest {
+  color: var(--color-accent);
+  background: var(--color-accent-muted);
+  border-color: rgba(61, 155, 143, 0.28);
+}
+
+.path-meta-sep {
+  color: var(--color-text-subtle);
+  font-size: var(--text-caption);
+}
+
+.path-meta-stat {
+  color: var(--color-text-subtle);
+  font-size: var(--text-caption);
+}
+
+/* ── PathDisplay block (PageCalculadora) ── */
+.path-display-block {
+  margin-top: var(--space-5);
+}
+
+.path-display-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-3);
 }
 
 /* ── Page content animation ── */

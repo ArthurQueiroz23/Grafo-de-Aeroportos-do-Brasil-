@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Microscope,
-  Terminal,
-  Ban,
-  AlertTriangle,
-  CheckCircle2,
-} from "lucide-react";
+import { Microscope, Terminal, Network } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader.jsx";
 import { InteractiveListTable } from "../components/ui/interactive-logs-table-shadcnui.jsx";
 import { mapComparacaoBfDijkstra } from "../lib/interactive-list-adapters.js";
@@ -13,6 +7,7 @@ import Modal from "../components/ui/Modal.jsx";
 import EmptyState from "../components/ui/EmptyState.jsx";
 import ChartSequence from "../components/ChartSequence.jsx";
 import { LoadingCenter, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
+import SnapGraph from "../components/SnapGraph.jsx";
 import { CHART } from "../constants/theme.js";
 
 const VIZ_IMAGES = [
@@ -34,12 +29,7 @@ const VIZ_IMAGES = [
 
 function TimeBarchart({ label, dijVal, bfVal, gradId }) {
   if (dijVal == null || bfVal == null) return null;
-  const W = 260,
-    H = 190,
-    PL = 56,
-    PT = 20,
-    PR = 18,
-    PB = 46;
+  const W = 300, H = 210, PL = 64, PT = 24, PR = 20, PB = 52;
   const plotW = W - PL - PR;
   const plotH = H - PT - PB;
   const maxVal = Math.max(dijVal, bfVal) * 1.2 || 1;
@@ -50,13 +40,13 @@ function TimeBarchart({ label, dijVal, bfVal, gradId }) {
   const bfH = (bfVal / maxVal) * plotH;
 
   return (
-    <div style={{ flex: 1, minWidth: 220 }}>
+    <div style={{ flex: 1, minWidth: 240 }}>
       <div
         style={{
           fontSize: "var(--text-caption)",
           color: "var(--color-text-muted)",
           textAlign: "center",
-          marginBottom: "var(--space-2)",
+          marginBottom: "var(--space-3)",
           fontWeight: 600,
         }}
       >
@@ -86,19 +76,14 @@ function TimeBarchart({ label, dijVal, bfVal, gradId }) {
             <g key={frac}>
               <line x1={PL} y1={y} x2={W - PR} y2={y} stroke={CHART.grid} />
               {frac > 0 && (
-                <text
-                  x={PL - 4}
-                  y={y + 4}
-                  textAnchor="end"
-                  fontSize={11}
-                  fill={CHART.label}
-                >
+                <text x={PL - 5} y={y + 4} textAnchor="end" fontSize={11} fill={CHART.label}>
                   {v < 0.001 ? v.toExponential(1) : v.toFixed(3)}
                 </text>
               )}
             </g>
           );
         })}
+
         <rect
           x={cx - barW - gap / 2}
           y={PT + plotH - dijH}
@@ -107,25 +92,13 @@ function TimeBarchart({ label, dijVal, bfVal, gradId }) {
           fill={`url(#dg_${gradId})`}
           rx={3}
         />
-        <text
-          x={cx - barW / 2 - gap / 2}
-          y={PT + plotH - dijH - 5}
-          textAnchor="middle"
-          fontSize={11}
-          fill={CHART.dijkstra}
-        >
+        <text x={cx - barW / 2 - gap / 2} y={PT + plotH - dijH - 6} textAnchor="middle" fontSize={11} fill={CHART.dijkstra}>
           {dijVal.toFixed(4)}
         </text>
-        <text
-          x={cx - barW / 2 - gap / 2}
-          y={PT + plotH + 16}
-          textAnchor="middle"
-          fontSize={12}
-          fill={CHART.dijkstra}
-          fontWeight="700"
-        >
+        <text x={cx - barW / 2 - gap / 2} y={PT + plotH + 18} textAnchor="middle" fontSize={12} fill={CHART.dijkstra} fontWeight="700">
           Dijkstra
         </text>
+
         <rect
           x={cx + gap / 2}
           y={PT + plotH - bfH}
@@ -134,176 +107,27 @@ function TimeBarchart({ label, dijVal, bfVal, gradId }) {
           fill={`url(#bg_${gradId})`}
           rx={3}
         />
-        <text
-          x={cx + barW / 2 + gap / 2}
-          y={PT + plotH - bfH - 5}
-          textAnchor="middle"
-          fontSize={11}
-          fill={CHART.bellmanFord}
-        >
+        <text x={cx + barW / 2 + gap / 2} y={PT + plotH - bfH - 6} textAnchor="middle" fontSize={11} fill={CHART.bellmanFord}>
           {bfVal.toFixed(4)}
         </text>
-        <text
-          x={cx + barW / 2 + gap / 2}
-          y={PT + plotH + 16}
-          textAnchor="middle"
-          fontSize={12}
-          fill={CHART.bellmanFord}
-          fontWeight="700"
-        >
+        <text x={cx + barW / 2 + gap / 2} y={PT + plotH + 18} textAnchor="middle" fontSize={12} fill={CHART.bellmanFord} fontWeight="700">
           Bellman-Ford
         </text>
+
         <line x1={PL} y1={PT} x2={PL} y2={PT + plotH} stroke={CHART.axis} />
-        <line
-          x1={PL}
-          y1={PT + plotH}
-          x2={W - PR}
-          y2={PT + plotH}
-          stroke={CHART.axis}
-        />
+        <line x1={PL} y1={PT + plotH} x2={W - PR} y2={PT + plotH} stroke={CHART.axis} />
         <text
-          x={12}
+          x={14}
           y={PT + plotH / 2}
           textAnchor="middle"
           fontSize={11}
           fill={CHART.label}
-          transform={`rotate(-90, 12, ${PT + plotH / 2})`}
+          transform={`rotate(-90, 14, ${PT + plotH / 2})`}
         >
           segundos
         </text>
       </svg>
     </div>
-  );
-}
-
-function fmtDist(d) {
-  if (d === null || d === undefined) return "∞";
-  return Number(d).toFixed(1);
-}
-
-function ResultadoBF({ bf }) {
-  const cicloNeg = bf?.tem_ciclo_negativo;
-  return (
-    <div style={{ flex: 1, minWidth: 220 }}>
-      <div
-        style={{
-          fontSize: "var(--text-caption)",
-          fontWeight: 700,
-          color: "var(--color-accent)",
-          textTransform: "uppercase",
-          letterSpacing: "var(--tracking-wide)",
-          marginBottom: "var(--space-3)",
-        }}
-      >
-        Bellman-Ford
-      </div>
-      {cicloNeg ? (
-        <div
-          className="alert alert--warning"
-          role="status"
-          style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}
-        >
-          <AlertTriangle size={16} aria-hidden="true" />
-          <span>
-            <strong>Ciclo negativo detectado.</strong> Não existe caminho mínimo
-            bem definido — o algoritmo sinaliza o problema em vez de devolver um
-            valor errado.
-          </span>
-        </div>
-      ) : (
-        <>
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--space-2)",
-              alignItems: "center",
-              color: "var(--color-success)",
-              fontWeight: 600,
-              marginBottom: "var(--space-3)",
-              fontSize: "var(--text-caption)",
-            }}
-          >
-            <CheckCircle2 size={16} aria-hidden="true" />
-            Distâncias mínimas calculadas
-          </div>
-          {Object.entries(bf?.distancias || {}).map(([no, d]) => (
-            <div className="info-row" key={no}>
-              <span className="info-key mono">nó {no}</span>
-              <span className="info-val mono">{fmtDist(d)}</span>
-            </div>
-          ))}
-        </>
-      )}
-    </div>
-  );
-}
-
-function ResultadoDijkstra({ dijkstra }) {
-  return (
-    <div style={{ flex: 1, minWidth: 220 }}>
-      <div
-        style={{
-          fontSize: "var(--text-caption)",
-          fontWeight: 700,
-          color: "var(--color-primary)",
-          textTransform: "uppercase",
-          letterSpacing: "var(--tracking-wide)",
-          marginBottom: "var(--space-3)",
-        }}
-      >
-        Dijkstra
-      </div>
-      {dijkstra?.recusou ? (
-        <div
-          className="alert alert--error"
-          role="status"
-          style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}
-        >
-          <Ban size={16} aria-hidden="true" />
-          <span>
-            <strong>Recusou o grafo.</strong> {dijkstra.motivo}. Dijkstra assume
-            pesos não negativos como precondição.
-          </span>
-        </div>
-      ) : (
-        Object.entries(dijkstra?.distancias || {}).map(([no, d]) => (
-          <div className="info-row" key={no}>
-            <span className="info-key mono">nó {no}</span>
-            <span className="info-val mono">{fmtDist(d)}</span>
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
-function DemoCard({ demo }) {
-  return (
-    <section className="section">
-      <h2 className="section-title">{demo.titulo}</h2>
-      <p className="section-lead">{demo.descricao}</p>
-
-      <div className="info-row">
-        <span className="info-key">Arestas (origem → destino : peso)</span>
-        <span className="info-val mono">
-          {(demo.arestas || [])
-            .map(([u, v, w]) => `${u}→${v}:${w}`)
-            .join("  ·  ")}
-        </span>
-      </div>
-      <div className="info-row">
-        <span className="info-key">Fonte</span>
-        <span className="info-val mono">{demo.fonte}</span>
-      </div>
-
-      <div
-        className="two-col"
-        style={{ marginTop: "var(--space-5)", alignItems: "flex-start" }}
-      >
-        <ResultadoBF bf={demo.bellman_ford} />
-        <ResultadoDijkstra dijkstra={demo.dijkstra} />
-      </div>
-    </section>
   );
 }
 
@@ -341,18 +165,13 @@ export default function PageParte2() {
         const rows = lines.map((l) => {
           const vals = l.split(",");
           const obj = {};
-          keys.forEach((k, i) => {
-            obj[k] = vals[i] ? vals[i].trim() : "";
-          });
+          keys.forEach((k, i) => { obj[k] = vals[i] ? vals[i].trim() : ""; });
           return obj;
         });
         setCmpRows(rows.slice(0, 20));
 
         const seenSrc = new Set();
-        let tBfTotal = 0,
-          tDjTotal = 0,
-          srcCount = 0,
-          coincidencias = 0;
+        let tBfTotal = 0, tDjTotal = 0, srcCount = 0, coincidencias = 0;
         rows.forEach((r) => {
           if (!seenSrc.has(r.origem)) {
             seenSrc.add(r.origem);
@@ -366,14 +185,8 @@ export default function PageParte2() {
           fontes: srcCount,
           pares: rows.length,
           coincidencias,
-          dijkstra: {
-            total: tDjTotal,
-            medio: srcCount > 0 ? tDjTotal / srcCount : 0,
-          },
-          bf: {
-            total: tBfTotal,
-            medio: srcCount > 0 ? tBfTotal / srcCount : 0,
-          },
+          dijkstra: { total: tDjTotal, medio: srcCount > 0 ? tDjTotal / srcCount : 0 },
+          bf: { total: tBfTotal, medio: srcCount > 0 ? tBfTotal / srcCount : 0 },
         });
       })
       .catch(() => {});
@@ -389,15 +202,17 @@ export default function PageParte2() {
 
   const dij = timing?.dijkstra;
   const bf = timing?.bf;
+  const hasSnapGraph = (demos && demos.length > 0) || (exploracao && (exploracao.bfs?.length > 0 || exploracao.dfs?.length > 0));
 
   return (
     <div className="page-parte2">
       <PageHeader
         eyebrow="SNAP RoadNet-CA"
         title="Parte 2 — SNAP RoadNet-CA"
-        subtitle="Análise do subgrafo de estradas da Califórnia: benchmarking Dijkstra × Bellman-Ford e exploração BFS/DFS."
+        subtitle="Análise do subgrafo de estradas da Califórnia: benchmarking Dijkstra × Bellman-Ford, exploração BFS/DFS e grafo interativo com rotas completas."
       />
 
+      {/* ── KPIs ─────────────────────────────────── */}
       {!sub ? (
         <SkeletonKpiGrid count={5} />
       ) : (
@@ -409,16 +224,12 @@ export default function PageParte2() {
           </div>
           <div className="kpi-card">
             <div className="kpi-label">Arestas dirigidas</div>
-            <div className="kpi-value">
-              {sub?.tamanho_arestas_dirigidas?.toLocaleString() ?? "—"}
-            </div>
+            <div className="kpi-value">{sub?.tamanho_arestas_dirigidas?.toLocaleString() ?? "—"}</div>
             <div className="kpi-unit">arestas</div>
           </div>
           <div className="kpi-card">
             <div className="kpi-label">Densidade dirigida</div>
-            <div className="kpi-value">
-              {sub ? (sub.densidade_dirigida * 100).toFixed(3) : "—"}
-            </div>
+            <div className="kpi-value">{sub ? (sub.densidade_dirigida * 100).toFixed(3) : "—"}</div>
             <div className="kpi-unit">%</div>
           </div>
           <div className="kpi-card">
@@ -434,6 +245,28 @@ export default function PageParte2() {
         </div>
       )}
 
+      {/* ── Grafo Interativo SNAP ─────────────── */}
+      <section className="section">
+        <h2 className="section-title">
+          <Network size={18} strokeWidth={1.75} aria-hidden="true" />
+          Grafo Interativo — SNAP RoadNet-CA
+        </h2>
+        <p className="section-lead">
+          Visualize os grafos de demonstração de pesos negativos e explore a estrutura de camadas BFS/DFS do subgrafo.
+          Clique em qualquer nó para ver o caminho completo a partir da fonte.
+        </p>
+        {hasSnapGraph ? (
+          <SnapGraph demos={demos} exploracao={exploracao} />
+        ) : (
+          <EmptyState
+            icon={Terminal}
+            title="Grafo não disponível"
+            description="Execute python -m src.cli parte2 no terminal do projeto para gerar os dados."
+          />
+        )}
+      </section>
+
+      {/* ── Visualizações PNG ──────────────────── */}
       <section className="section">
         <h2 className="section-title">
           <Microscope size={18} strokeWidth={1.75} aria-hidden="true" />
@@ -455,11 +288,12 @@ export default function PageParte2() {
         )}
       </section>
 
+      {/* ── BFS/DFS amostras (texto) ─────────── */}
       {exploracao && (exploracao.bfs?.length > 0 || exploracao.dfs?.length > 0) && (
         <div className="two-col">
           {exploracao.bfs?.length > 0 && (
             <section className="section" style={{ marginBottom: 0 }}>
-              <h2 className="section-title">BFS dirigido — amostras</h2>
+              <h2 className="section-title">BFS dirigido — resumo</h2>
               {exploracao.bfs.map((b) => (
                 <div key={b.fonte} style={{ marginBottom: "var(--space-5)" }}>
                   <div className="info-row">
@@ -468,12 +302,10 @@ export default function PageParte2() {
                   </div>
                   <div className="info-row">
                     <span className="info-key">Nós alcançados</span>
-                    <span className="info-val">
-                      {b.nos_alcancados?.toLocaleString()}
-                    </span>
+                    <span className="info-val">{b.nos_alcancados?.toLocaleString()}</span>
                   </div>
                   <div className="info-row">
-                    <span className="info-key">Camadas (distância → qtd)</span>
+                    <span className="info-key">Camadas (dist → qtd)</span>
                     <span className="info-val mono">
                       {Object.entries(b.camadas || {})
                         .map(([d, n]) => `${d}:${n}`)
@@ -486,7 +318,7 @@ export default function PageParte2() {
           )}
           {exploracao.dfs?.length > 0 && (
             <section className="section" style={{ marginBottom: 0 }}>
-              <h2 className="section-title">DFS dirigido — amostras</h2>
+              <h2 className="section-title">DFS dirigido — resumo</h2>
               {exploracao.dfs.map((d) => (
                 <div key={d.fonte} style={{ marginBottom: "var(--space-5)" }}>
                   <div className="info-row">
@@ -495,9 +327,7 @@ export default function PageParte2() {
                   </div>
                   <div className="info-row">
                     <span className="info-key">Nós visitados</span>
-                    <span className="info-val">
-                      {d.nos_visitados?.toLocaleString()}
-                    </span>
+                    <span className="info-val">{d.nos_visitados?.toLocaleString()}</span>
                   </div>
                   <div className="info-row">
                     <span className="info-key">Amostra da ordem</span>
@@ -512,6 +342,7 @@ export default function PageParte2() {
         </div>
       )}
 
+      {/* ── Tempos individuais ─────────────────── */}
       <div className="two-col">
         <section className="section">
           <h2 className="section-title">Dijkstra (SSSP)</h2>
@@ -521,10 +352,7 @@ export default function PageParte2() {
           </div>
           <div className="info-row">
             <span className="info-key">Tempo total</span>
-            <span
-              className="info-val"
-              style={{ color: "var(--color-primary)", fontWeight: 700 }}
-            >
+            <span className="info-val" style={{ color: "var(--color-primary)", fontWeight: 700 }}>
               {dij?.total?.toFixed(4) ?? "—"} s
             </span>
           </div>
@@ -541,10 +369,7 @@ export default function PageParte2() {
           </div>
           <div className="info-row">
             <span className="info-key">Tempo total</span>
-            <span
-              className="info-val"
-              style={{ color: "var(--color-accent)", fontWeight: 700 }}
-            >
+            <span className="info-val" style={{ color: "var(--color-accent)", fontWeight: 700 }}>
               {bf?.total?.toFixed(4) ?? "—"} s
             </span>
           </div>
@@ -555,6 +380,7 @@ export default function PageParte2() {
         </section>
       </div>
 
+      {/* ── Benchmarking ──────────────────────── */}
       <section className="section">
         <h2 className="section-title">Benchmarking — Dijkstra × Bellman-Ford</h2>
         <p className="section-lead">
@@ -566,26 +392,17 @@ export default function PageParte2() {
         <div
           style={{
             display: "flex",
-            gap: "var(--space-6)",
+            gap: "var(--space-8)",
             justifyContent: "center",
             flexWrap: "wrap",
+            paddingTop: "var(--space-2)",
           }}
         >
-          <TimeBarchart
-            label="Tempo Total (s)"
-            dijVal={dij?.total}
-            bfVal={bf?.total}
-            gradId="total"
-          />
-          <TimeBarchart
-            label="Tempo Médio por Fonte (s)"
-            dijVal={dij?.medio}
-            bfVal={bf?.medio}
-            gradId="medio"
-          />
+          <TimeBarchart label="Tempo Total (s)" dijVal={dij?.total} bfVal={bf?.total} gradId="total" />
+          <TimeBarchart label="Tempo Médio por Fonte (s)" dijVal={dij?.medio} bfVal={bf?.medio} gradId="medio" />
         </div>
         {dij && bf && (
-          <div className="insight-box">
+          <div className="insight-box" style={{ marginTop: "var(--space-6)" }}>
             Dijkstra foi{" "}
             <strong style={{ color: "var(--color-primary)" }}>
               {bf.total > 0 ? (bf.total / dij.total).toFixed(1) : "—"}×
@@ -599,26 +416,7 @@ export default function PageParte2() {
         )}
       </section>
 
-      {demos && demos.length > 0 && (
-        <>
-          <section className="section" style={{ marginBottom: "var(--space-3)" }}>
-            <h2 className="section-title">
-              <AlertTriangle size={18} strokeWidth={1.75} aria-hidden="true" />
-              Por que dois algoritmos? — pesos negativos
-            </h2>
-            <p className="section-lead">
-              No subgrafo SNAP todos os pesos são positivos, então Dijkstra e
-              Bellman-Ford sempre concordam. Os dois grafos-demonstração abaixo
-              expõem o cenário onde eles divergem — exatamente o que justifica a
-              existência do Bellman-Ford.
-            </p>
-          </section>
-          {demos.map((demo) => (
-            <DemoCard key={demo.id} demo={demo} />
-          ))}
-        </>
-      )}
-
+      {/* ── Comparação tabela ─────────────────── */}
       <section className="section">
         <h2 className="section-title">Comparação BF × Dijkstra (primeiros 20 pares)</h2>
         {cmpRows.length === 0 ? (
@@ -628,11 +426,7 @@ export default function PageParte2() {
             title="Comparação BF × Dijkstra"
             items={mapComparacaoBfDijkstra(cmpRows)}
             searchPlaceholder="Buscar par origem–destino…"
-            filterLabels={{
-              level: "Resultado",
-              service: "Origem",
-              status: "Destino",
-            }}
+            filterLabels={{ level: "Resultado", service: "Origem", status: "Destino" }}
           />
         )}
       </section>

@@ -10,6 +10,8 @@ export default function GrafoVizPanel({
   mandatoryPairs,
   regionMap,
   grauMap,
+  highlightPath = [],
+  pathPairs = [],
 }) {
   const [view, setView] = useState("graph");
 
@@ -47,6 +49,7 @@ export default function GrafoVizPanel({
             airports={airports}
             edges={edges}
             mandatoryPairs={mandatoryPairs}
+            pathPairs={pathPairs}
             regionMap={regionMap}
             grauMap={grauMap}
           />
@@ -55,6 +58,7 @@ export default function GrafoVizPanel({
             airports={airports}
             edges={edges}
             mandatoryPairs={mandatoryPairs}
+            highlightPath={highlightPath}
             regionMap={regionMap}
             grauMap={grauMap}
           />
