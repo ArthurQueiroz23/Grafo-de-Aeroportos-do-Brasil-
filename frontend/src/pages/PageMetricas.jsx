@@ -9,6 +9,7 @@ import {
   mapGrausRanking,
 } from "../lib/interactive-list-adapters.js";
 import { REGION_HEX, CHART } from "../constants/theme.js";
+import { parseCSV } from "../lib/graphUtils.js";
 
 function DegreeHistogram({ graus }) {
   const data = useMemo(() => {
@@ -138,19 +139,6 @@ function DegreeHistogram({ graus }) {
       </text>
     </svg>
   );
-}
-
-function parseCSV(text) {
-  const [header, ...lines] = text.trim().split("\n");
-  const keys = header.split(",");
-  return lines.map((l) => {
-    const vals = l.split(",");
-    const obj = {};
-    keys.forEach((k, i) => {
-      obj[k.trim()] = vals[i] ? vals[i].trim() : "";
-    });
-    return obj;
-  });
 }
 
 function HubRanking({ graus }) {
