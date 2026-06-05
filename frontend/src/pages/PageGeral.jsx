@@ -5,48 +5,8 @@ import PageHeader from "../components/ui/PageHeader.jsx";
 import AppButton from "../components/ui/AppButton.jsx";
 import InsightGrid from "../components/ui/InsightGrid.jsx";
 import { SkeletonGraph, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
-<<<<<<< HEAD
 import { insightsRede } from "../lib/insights.js";
-
-function parseCSV(text) {
-  const [header, ...lines] = text.trim().split("\n");
-  const keys = header.split(",");
-  return lines.map((l) => {
-    const vals = l.split(",");
-    const obj = {};
-    keys.forEach((k, i) => { obj[k.trim()] = vals[i] ? vals[i].trim() : ""; });
-    return obj;
-  });
-}
-
-/* ── Client-side Dijkstra ─────────────────────────────────── */
-function dijkstra(graph, start, end) {
-  const dist = {};
-  const prev = {};
-  const visited = new Set();
-  for (const n of Object.keys(graph)) dist[n] = Infinity;
-  dist[start] = 0;
-  const pq = [[0, start]];
-  while (pq.length > 0) {
-    pq.sort((a, b) => a[0] - b[0]);
-    const [d, u] = pq.shift();
-    if (visited.has(u)) continue;
-    visited.add(u);
-    if (u === end) break;
-    for (const [v, w] of Object.entries(graph[u] || {})) {
-      const nd = d + w;
-      if (nd < dist[v]) { dist[v] = nd; prev[v] = u; pq.push([nd, v]); }
-    }
-  }
-  if (dist[end] === Infinity) return { cost: Infinity, path: [] };
-  const path = [];
-  let cur = end;
-  while (cur !== undefined) { path.unshift(cur); cur = prev[cur]; }
-  return { cost: dist[end], path };
-}
-=======
 import { parseCSV, buildGraph, dijkstra } from "../lib/graphUtils.js";
->>>>>>> 0c5c3a98f82506737cfe9fc3797afe541d03b9f7
 
 const GESTALT_LEGEND = [
   { color: "var(--region-nordeste)", title: "Gestalt — Similaridade",   desc: "Cor do nó identifica a região geográfica" },
@@ -60,13 +20,9 @@ export default function PageGeral() {
   const [rankings, setRankings]   = useState(null);
   const [graphData, setGraphData] = useState(null);
   const [regionMap, setRegionMap] = useState({});
-<<<<<<< HEAD
-  const [grauMap, setGrauMap] = useState({});
-  const [regioes, setRegioes] = useState([]);
-  const [routes, setRoutes] = useState([]);
-=======
   const [grauMap, setGrauMap]     = useState({});
->>>>>>> 0c5c3a98f82506737cfe9fc3797afe541d03b9f7
+  const [regioes, setRegioes]     = useState([]);
+  const [routes, setRoutes]       = useState([]);
 
   const [pathFrom, setPathFrom]     = useState("");
   const [pathTo, setPathTo]         = useState("");
@@ -230,8 +186,7 @@ export default function PageGeral() {
         </div>
       )}
 
-<<<<<<< HEAD
-      {/* ── Insights da rede ─────────────────── */}
+      {/* Insights da rede */}
       {redeInsights.length > 0 && (
         <section className="section">
           <h2 className="section-title">
@@ -246,10 +201,7 @@ export default function PageGeral() {
         </section>
       )}
 
-      {/* ── Top hubs ─────────────────────────── */}
-=======
       {/* Top hubs */}
->>>>>>> 0c5c3a98f82506737cfe9fc3797afe541d03b9f7
       {topHubs.length > 0 && (
         <section className="section">
           <h2 className="section-title">
