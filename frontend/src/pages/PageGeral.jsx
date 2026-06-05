@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
-import { Network, TrendingUp, Route, ArrowRight, X } from "lucide-react";
+import { Network, TrendingUp, Route, ArrowRight, X, Lightbulb } from "lucide-react";
 import GrafoVizPanel from "../components/GrafoVizPanel.jsx";
 import PageHeader from "../components/ui/PageHeader.jsx";
 import AppButton from "../components/ui/AppButton.jsx";
+import InsightGrid from "../components/ui/InsightGrid.jsx";
 import { SkeletonGraph, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
+import { insightsRede } from "../lib/insights.js";
 
 function parseCSV(text) {
   const [header, ...lines] = text.trim().split("\n");
@@ -55,6 +57,8 @@ export default function PageGeral() {
   const [graphData, setGraphData] = useState(null);
   const [regionMap, setRegionMap] = useState({});
   const [grauMap, setGrauMap] = useState({});
+  const [regioes, setRegioes] = useState([]);
+  const [routes, setRoutes] = useState([]);
 
   /* path-finder state */
   const [pathFrom, setPathFrom] = useState("");
@@ -64,6 +68,10 @@ export default function PageGeral() {
   useEffect(() => {
     fetch("/out/global.json").then((r) => r.json()).then(setGlobal);
     fetch("/out/rankings.json").then((r) => r.json()).then(setRankings);
+    fetch("/out/regioes.json")
+      .then((r) => r.json())
+      .then((j) => setRegioes(Array.isArray(j) ? j : j.regioes ?? []))
+      .catch(() => {});
 
     Promise.all([
       fetch("/data/adjacencias_aeroportos.csv").then((r) => r.text()),
@@ -91,6 +99,7 @@ export default function PageGeral() {
       }));
 
       const rotasRows = parseCSV(rotasText);
+      setRoutes(rotasRows);
       const mandatoryPairs = [];
       const mandSet = new Set();
       rotasRows.forEach((r) => {
@@ -154,6 +163,16 @@ export default function PageGeral() {
       .map(([id, grau]) => ({ id, grau }));
   }, [grauMap]);
 
+  const grausArr = useMemo(
+    () => Object.entries(grauMap).map(([aeroporto, grau]) => ({ aeroporto, grau })),
+    [grauMap]
+  );
+
+  const redeInsights = useMemo(
+    () => insightsRede({ global, rankings, graus: grausArr, regioes, rotas: routes }),
+    [global, rankings, grausArr, regioes, routes]
+  );
+
   const handleFindRoute = () => {
     if (!pathFrom || !pathTo || pathFrom === pathTo) return;
     if (!graph[pathFrom] || !graph[pathTo]) return;
@@ -214,6 +233,21 @@ export default function PageGeral() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Insights da rede ─────────────────── */}
+      {redeInsights.length > 0 && (
+        <section className="section">
+          <h2 className="section-title">
+            <Lightbulb size={18} strokeWidth={1.75} aria-hidden="true" />
+            Leitura da rede
+          </h2>
+          <p className="section-lead">
+            Observações geradas a partir dos próprios dados — estrutura, geografia e rotas — e
+            não de regras fixas.
+          </p>
+          <InsightGrid insights={redeInsights} />
+        </section>
       )}
 
       {/* ── Top hubs ─────────────────────────── */}

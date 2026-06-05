@@ -365,13 +365,342 @@ function DemoVis({ demo }) {
   );
 }
 
+/* ─── search-tree helpers (BFS / DFS nó a nó) ─────────────── */
+// cor do nó fade do teal conforme a profundidade cresce (t ∈ [0,1])
+function depthColor(t) {
+  const g = Math.round(155 - t * 75); // 155 → 80
+  const b = Math.round(143 - t * 88); // 143 → 55
+  return { bg: `rgba(61,${g},${b},0.34)`, border: `rgba(61,${g},${b},0.9)` };
+}
+
+// caminho da raiz até `id`, subindo pelos ponteiros de pai
+function rootPathIds(nodeById, id) {
+  const path = [];
+  let cur = id == null ? null : String(id);
+  const seen = new Set();
+  while (cur != null && nodeById[cur] && !seen.has(cur)) {
+    seen.add(cur);
+    path.unshift(cur);
+    const p = nodeById[cur].pai;
+    cur = p == null ? null : String(p);
+  }
+  return path;
+}
+
+const TREE_OPTS = {
+  autoResize: true,
+  nodes: {
+    shape: "dot",
+    font: { face: "DM Sans, sans-serif", color: C.text, strokeWidth: 4, strokeColor: C.labelStroke },
+  },
+  edges: { selectionWidth: 0, hoverWidth: 0 },
+  interaction: {
+    hover: true,
+    tooltipDelay: 80,
+    dragNodes: true,
+    dragView: true,
+    zoomView: true,
+    zoomSpeed: 0.4,
+    navigationButtons: false,
+    keyboard: { enabled: false },
+  },
+  physics: { enabled: false },
+  layout: {
+    hierarchical: {
+      enabled: true,
+      direction: "UD",
+      sortMethod: "directed",
+      levelSeparation: 62,
+      nodeSpacing: 50,
+      treeSpacing: 80,
+      blockShifting: true,
+      edgeMinimization: true,
+      parentCentralization: true,
+    },
+  },
+};
+
+function treeNodeTooltip(n) {
+  return (
+    `<div style="background:#161d26;border:1px solid rgba(61,155,143,0.4);border-radius:10px;` +
+    `padding:10px 14px;font-family:'DM Sans',sans-serif;box-shadow:0 12px 32px rgba(0,0,0,0.4);">` +
+    `<div style="font-size:15px;font-weight:700;color:${n.pai == null ? "#e8a838" : "#3d9b8f"}">` +
+    `nó ${n.id}${n.pai == null ? " ★" : ""}</div>` +
+    `<div style="margin-top:6px;font-size:11px;color:rgba(238,241,245,0.7)">profundidade: ` +
+    `<strong style="color:#eef1f5">${n.profundidade}</strong></div>` +
+    `<div style="font-size:11px;color:rgba(238,241,245,0.7)">ordem de visita: ` +
+    `<strong style="color:#eef1f5">${n.ordem + 1}º</strong></div>` +
+    (n.pai != null
+      ? `<div style="font-size:11px;color:rgba(238,241,245,0.55)">pai: nó ${n.pai}</div>`
+      : `<div style="font-size:11px;color:rgba(238,241,245,0.5)">raiz da árvore</div>`) +
+    `</div>`
+  );
+}
+
+/* ─── SearchTree — uma árvore de busca (BFS ou DFS) ───────── */
+function SearchTree({ arvore }) {
+  const containerRef = useRef(null);
+  const networkRef = useRef(null);
+  const nodesRef = useRef(null);
+  const edgesRef = useRef(null);
+  const [selectedId, setSelectedId] = useState(null);
+
+  const fonte = String(arvore.fonte);
+  const profMax = Math.max(1, arvore.profundidade_maxima || 1);
+
+  const nodeById = useMemo(() => {
+    const map = {};
+    (arvore.nos || []).forEach((n) => {
+      map[String(n.id)] = {
+        id: String(n.id),
+        pai: n.pai == null ? null : String(n.pai),
+        profundidade: n.profundidade,
+        ordem: n.ordem,
+      };
+    });
+    return map;
+  }, [arvore]);
+
+  const { nodes, edges } = useMemo(() => {
+    const nodesArr = (arvore.nos || []).map((n) => {
+      const id = String(n.id);
+      const isSrc = n.pai == null;
+      const col = isSrc ? { bg: C.src.bg, border: C.src.border } : depthColor(n.profundidade / profMax);
+      return {
+        id,
+        label: `${n.id}`,
+        level: n.profundidade,
+        shape: "dot",
+        size: isSrc ? 24 : 13,
+        title: treeNodeTooltip(n),
+        color: {
+          background: col.bg,
+          border: col.border,
+          highlight: { background: isSrc ? "rgba(232,168,56,0.7)" : "rgba(61,155,143,0.6)", border: "#fff" },
+          hover: { background: isSrc ? "rgba(232,168,56,0.55)" : "rgba(61,155,143,0.5)", border: "#fff" },
+        },
+        font: {
+          size: isSrc ? 14 : 10,
+          color: isSrc ? C.text : "rgba(238,241,245,0.78)",
+          face: "DM Sans, sans-serif",
+          strokeWidth: isSrc ? 5 : 3,
+          strokeColor: C.labelStroke,
+        },
+        borderWidth: isSrc ? 2.5 : 1.6,
+        shadow: { enabled: true, color: isSrc ? C.src.glow : "rgba(0,0,0,0.4)", size: isSrc ? 18 : 5, x: 0, y: isSrc ? 0 : 2 },
+        _depth: n.profundidade,
+        _isSrc: isSrc,
+      };
+    });
+
+    const edgesArr = [];
+    (arvore.nos || []).forEach((n) => {
+      if (n.pai == null) return;
+      edgesArr.push({
+        id: `${n.pai}__${n.id}`,
+        from: String(n.pai),
+        to: String(n.id),
+        arrows: { to: { enabled: true, scaleFactor: 0.55 } },
+        color: { color: "rgba(61,155,143,0.5)", opacity: 0.85 },
+        width: 1.6,
+        smooth: { type: "cubicBezier", forceDirection: "vertical", roundness: 0.45 },
+      });
+    });
+
+    return { nodes: nodesArr, edges: edgesArr };
+  }, [arvore, profMax]);
+
+  useEffect(() => {
+    if (!containerRef.current || !nodes.length) return;
+    setSelectedId(null);
+
+    nodesRef.current = new DataSet(nodes);
+    edgesRef.current = new DataSet(edges);
+
+    const network = new Network(
+      containerRef.current,
+      { nodes: nodesRef.current, edges: edgesRef.current },
+      TREE_OPTS
+    );
+    networkRef.current = network;
+    network.fit({ animation: { duration: 400, easingFunction: "easeInOutQuad" } });
+
+    network.on("click", ({ nodes: ns }) => setSelectedId(ns.length > 0 ? ns[0] : null));
+
+    return () => {
+      network.destroy();
+      networkRef.current = null;
+    };
+  }, [nodes, edges]);
+
+  const pathIds = useMemo(
+    () => (selectedId ? rootPathIds(nodeById, selectedId) : []),
+    [selectedId, nodeById]
+  );
+
+  useEffect(() => {
+    if (!nodesRef.current || !edgesRef.current) return;
+    const pathNodes = new Set(pathIds);
+    const pathEdges = new Set();
+    for (let i = 0; i < pathIds.length - 1; i++) pathEdges.add(`${pathIds[i]}__${pathIds[i + 1]}`);
+    const hasSel = !!selectedId;
+
+    nodesRef.current.update(
+      nodesRef.current.get().map((n) => {
+        const onPath = pathNodes.has(n.id);
+        const dimmed = hasSel && !onPath;
+        const base = n._isSrc ? { bg: C.src.bg, border: C.src.border } : depthColor(n._depth / profMax);
+        return {
+          id: n.id,
+          opacity: dimmed ? 0.2 : 1,
+          color:
+            onPath && !n._isSrc
+              ? { background: C.path.bg, border: C.path.border }
+              : { background: base.bg, border: base.border },
+          shadow: {
+            enabled: true,
+            color: onPath ? C.path.glow : n._isSrc ? C.src.glow : "rgba(0,0,0,0.4)",
+            size: onPath ? 16 : n._isSrc ? 18 : 5,
+            x: 0,
+            y: onPath || n._isSrc ? 0 : 2,
+          },
+        };
+      })
+    );
+
+    edgesRef.current.update(
+      edgesRef.current.get().map((e) => {
+        const onPath = pathEdges.has(e.id);
+        return {
+          id: e.id,
+          color: onPath
+            ? { color: C.edgePath, opacity: 1 }
+            : { color: "rgba(61,155,143,0.5)", opacity: hasSel ? 0.14 : 0.85 },
+          width: onPath ? 3.4 : 1.6,
+          shadow: onPath ? { enabled: true, color: C.edgePathGlow, size: 12, x: 0, y: 0 } : false,
+        };
+      })
+    );
+  }, [pathIds, selectedId, profMax]);
+
+  const sel = selectedId ? nodeById[selectedId] : null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+      <div className="graph-panel" style={{ position: "relative" }}>
+        <span className="graph-hint">
+          {sel && selectedId !== fonte
+            ? `nó ${selectedId} · profundidade ${sel.profundidade} — caminho desde a raiz destacado`
+            : selectedId === fonte
+              ? "Raiz selecionada — clique em outro nó para ver o caminho desde a raiz"
+              : "Clique em um nó para destacar o caminho desde a raiz · Arraste · Zoom"}
+        </span>
+        <div ref={containerRef} className="graph-container" style={{ height: "min(560px, 64vh)", minHeight: 320 }} />
+      </div>
+
+      {pathIds.length > 1 && (
+        <PathDisplay path={pathIds} label={`Caminho na árvore: raiz (nó ${fonte}) → nó ${selectedId}`} />
+      )}
+
+      {selectedId === fonte && (
+        <div className="alert alert--info">
+          Esta é a raiz da árvore (nó fonte). Selecione outro nó para ver o caminho até ele.
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── SearchTreeComparison — alterna BFS × DFS ────────────── */
+function SearchTreeComparison({ arvoreBfs, arvoreDfs }) {
+  const [modo, setModo] = useState("dfs");
+
+  if (!arvoreBfs && !arvoreDfs) return null;
+
+  const arvore = modo === "dfs" ? arvoreDfs : arvoreBfs;
+  if (!arvore) return null;
+
+  const profBfs = arvoreBfs?.profundidade_maxima;
+  const profDfs = arvoreDfs?.profundidade_maxima;
+  const amostra = arvore.subgrafo?.ordem ?? arvore.n_nos;
+
+  const MODOS = [
+    { id: "dfs", label: "Árvore DFS", Icon: GitFork },
+    { id: "bfs", label: "Árvore BFS", Icon: Layers },
+  ];
+
+  return (
+    <div style={{ marginTop: "var(--space-8)" }}>
+      <h3
+        className="section-title"
+        style={{ fontSize: "var(--text-h3)", paddingBottom: "var(--space-3)", marginBottom: "var(--space-3)" }}
+      >
+        Árvores BFS × DFS — amostra conexa de {amostra} nós
+      </h3>
+      <p className="section-lead" style={{ marginBottom: "var(--space-4)" }}>
+        As duas árvores partem da <strong>mesma fonte</strong> e do <strong>mesmo subgrafo</strong>,
+        evidenciando a diferença estrutural entre as buscas: o BFS cresce em camadas (largo e raso)
+        e o DFS mergulha por um ramo de cada vez (profundo e estreito).
+      </p>
+
+      <div className="tabs" role="tablist" aria-label="Tipo de árvore" style={{ marginBottom: "var(--space-5)" }}>
+        {MODOS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={modo === id}
+            className={`tab-btn${modo === id ? " tab-btn--active" : ""}`}
+            onClick={() => setModo(id)}
+          >
+            <Icon size={12} style={{ marginRight: 4 }} aria-hidden="true" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-6)", marginBottom: "var(--space-4)" }}>
+        <div className="info-row" style={{ flex: "1 1 150px", border: "none", paddingTop: 0 }}>
+          <span className="info-key">Raiz</span>
+          <span className="info-val mono">nó {arvore.fonte}</span>
+        </div>
+        <div className="info-row" style={{ flex: "1 1 150px", border: "none", paddingTop: 0 }}>
+          <span className="info-key">Nós na árvore</span>
+          <span className="info-val">{arvore.n_nos?.toLocaleString()}</span>
+        </div>
+        <div className="info-row" style={{ flex: "1 1 150px", border: "none", paddingTop: 0 }}>
+          <span className="info-key">Profundidade máx.</span>
+          <span className="info-val" style={{ color: modo === "dfs" ? "var(--color-primary)" : "var(--color-accent)", fontWeight: 700 }}>
+            {arvore.profundidade_maxima}
+          </span>
+        </div>
+      </div>
+
+      <SearchTree key={modo} arvore={arvore} />
+
+      {profBfs != null && profDfs != null && (
+        <div className="insight-box" style={{ marginTop: "var(--space-5)" }}>
+          Na mesma amostra de <strong style={{ color: "var(--color-text)" }}>{amostra}</strong> nós, a árvore
+          {" "}<strong style={{ color: "var(--color-accent)" }}>BFS</strong> atinge profundidade
+          {" "}<strong style={{ color: "var(--color-accent)" }}>{profBfs}</strong> (larga e rasa), enquanto a
+          {" "}<strong style={{ color: "var(--color-primary)" }}>DFS</strong> chega a
+          {" "}<strong style={{ color: "var(--color-primary)" }}>{profDfs}</strong> de profundidade
+          {" "}— cerca de <strong style={{ color: "var(--color-primary)" }}>{(profDfs / Math.max(1, profBfs)).toFixed(1)}×</strong>{" "}
+          mais profunda. É a assinatura visual de cada estratégia de varredura.
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── BFSExplorer ─────────────────────────────────────────── */
 function BFSExplorer({ exploracao }) {
   const containerRef = useRef(null);
   const networkRef = useRef(null);
 
   const bfs = exploracao?.bfs?.[0];
-  const dfs = exploracao?.dfs?.[0];
+  const arvoreBfs = exploracao?.arvore_bfs;
+  const arvoreDfs = exploracao?.arvore_dfs;
 
   const { nodes, edges } = useMemo(() => {
     if (!bfs?.camadas) return { nodes: [], edges: [] };
@@ -458,9 +787,6 @@ function BFSExplorer({ exploracao }) {
     };
   }, [nodes, edges]);
 
-  const dfsOrder = dfs?.amostra_dfs?.slice(0, 20) || [];
-  const dfsExtra = dfs?.nos_visitados > 20 ? dfs.nos_visitados - 20 : 0;
-
   return (
     <div>
       {bfs && (
@@ -487,9 +813,15 @@ function BFSExplorer({ exploracao }) {
             </div>
           </div>
 
+          <h3
+            className="section-title"
+            style={{ fontSize: "var(--text-h3)", paddingBottom: "var(--space-3)", marginBottom: "var(--space-4)" }}
+          >
+            BFS em camadas — grafo completo
+          </h3>
           <div className="graph-panel" style={{ position: "relative" }}>
             <span className="graph-hint">
-              Árvore BFS — cada camada mostra quantos nós estão a essa distância da fonte
+              Cada camada agrega quantos nós estão àquela distância (em saltos) da fonte
             </span>
             <div
               ref={containerRef}
@@ -522,80 +854,8 @@ function BFSExplorer({ exploracao }) {
         </>
       )}
 
-      {dfsOrder.length > 0 && (
-        <div style={{ marginTop: "var(--space-8)" }}>
-          <h3
-            className="section-title"
-            style={{
-              fontSize: "var(--text-h3)",
-              paddingBottom: "var(--space-3)",
-              marginBottom: "var(--space-4)",
-            }}
-          >
-            DFS dirigido — sequência de visita
-          </h3>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "var(--space-6)",
-              marginBottom: "var(--space-4)",
-            }}
-          >
-            <div className="info-row" style={{ flex: "1 1 180px", border: "none", paddingTop: 0 }}>
-              <span className="info-key">Fonte DFS</span>
-              <span className="info-val mono">nó {dfs.fonte}</span>
-            </div>
-            <div className="info-row" style={{ flex: "1 1 180px", border: "none", paddingTop: 0 }}>
-              <span className="info-key">Nós visitados</span>
-              <span className="info-val">{dfs.nos_visitados?.toLocaleString()}</span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              fontSize: "var(--text-label)",
-              fontWeight: 700,
-              color: "var(--color-text-subtle)",
-              textTransform: "uppercase",
-              letterSpacing: "var(--tracking-wide)",
-              marginBottom: "var(--space-2)",
-            }}
-          >
-            Primeiros {dfsOrder.length} nós na ordem de visita
-          </div>
-          <div className="result-path">
-            {dfsOrder.map((n, i) => (
-              <span key={`${n}-${i}`}>
-                <strong
-                  style={{
-                    color:
-                      i === 0
-                        ? "var(--color-primary)"
-                        : i === dfsOrder.length - 1 && !dfsExtra
-                          ? "var(--color-accent)"
-                          : "var(--color-text)",
-                  }}
-                >
-                  {n}
-                </strong>
-                {i < dfsOrder.length - 1 && <span className="result-path-arrow">→</span>}
-              </span>
-            ))}
-            {dfsExtra > 0 && (
-              <span
-                style={{
-                  marginLeft: "var(--space-3)",
-                  fontSize: "var(--text-caption)",
-                  color: "var(--color-text-muted)",
-                }}
-              >
-                + {dfsExtra.toLocaleString()} nós…
-              </span>
-            )}
-          </div>
-        </div>
+      {(arvoreDfs || arvoreBfs) && (
+        <SearchTreeComparison arvoreBfs={arvoreBfs} arvoreDfs={arvoreDfs} />
       )}
     </div>
   );

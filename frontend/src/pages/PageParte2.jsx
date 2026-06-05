@@ -28,6 +28,7 @@ const VIZ_IMAGES = [
 ];
 
 function TimeBarchart({ label, dijVal, bfVal, gradId }) {
+  const [hover, setHover] = useState(null);
   if (dijVal == null || bfVal == null) return null;
   const W = 300, H = 210, PL = 64, PT = 24, PR = 20, PB = 52;
   const plotW = W - PL - PR;
@@ -84,35 +85,71 @@ function TimeBarchart({ label, dijVal, bfVal, gradId }) {
           );
         })}
 
-        <rect
-          x={cx - barW - gap / 2}
-          y={PT + plotH - dijH}
-          width={barW}
-          height={dijH}
-          fill={`url(#dg_${gradId})`}
-          rx={3}
-        />
-        <text x={cx - barW / 2 - gap / 2} y={PT + plotH - dijH - 6} textAnchor="middle" fontSize={11} fill={CHART.dijkstra}>
-          {dijVal.toFixed(4)}
-        </text>
-        <text x={cx - barW / 2 - gap / 2} y={PT + plotH + 18} textAnchor="middle" fontSize={12} fill={CHART.dijkstra} fontWeight="700">
-          Dijkstra
-        </text>
+        <g
+          onMouseEnter={() => setHover("dij")}
+          onMouseLeave={() => setHover(null)}
+          style={{ cursor: "pointer" }}
+        >
+          <rect x={cx - barW - gap / 2} y={PT} width={barW} height={plotH} fill="transparent" />
+          <rect
+            x={cx - barW - gap / 2}
+            y={PT + plotH - dijH}
+            width={barW}
+            height={dijH}
+            fill={`url(#dg_${gradId})`}
+            rx={3}
+            opacity={hover === "bf" ? 0.45 : 1}
+            stroke={hover === "dij" ? CHART.dijkstra : "transparent"}
+            strokeWidth={hover === "dij" ? 1.5 : 0}
+            style={{ transition: "opacity 120ms ease" }}
+          />
+          <text
+            x={cx - barW / 2 - gap / 2}
+            y={PT + plotH - dijH - 6}
+            textAnchor="middle"
+            fontSize={hover === "dij" ? 13 : 11}
+            fontWeight={hover === "dij" ? 700 : 400}
+            fill={CHART.dijkstra}
+          >
+            {dijVal.toFixed(4)}
+          </text>
+          <text x={cx - barW / 2 - gap / 2} y={PT + plotH + 18} textAnchor="middle" fontSize={12} fill={CHART.dijkstra} fontWeight="700">
+            Dijkstra
+          </text>
+        </g>
 
-        <rect
-          x={cx + gap / 2}
-          y={PT + plotH - bfH}
-          width={barW}
-          height={bfH}
-          fill={`url(#bg_${gradId})`}
-          rx={3}
-        />
-        <text x={cx + barW / 2 + gap / 2} y={PT + plotH - bfH - 6} textAnchor="middle" fontSize={11} fill={CHART.bellmanFord}>
-          {bfVal.toFixed(4)}
-        </text>
-        <text x={cx + barW / 2 + gap / 2} y={PT + plotH + 18} textAnchor="middle" fontSize={12} fill={CHART.bellmanFord} fontWeight="700">
-          Bellman-Ford
-        </text>
+        <g
+          onMouseEnter={() => setHover("bf")}
+          onMouseLeave={() => setHover(null)}
+          style={{ cursor: "pointer" }}
+        >
+          <rect x={cx + gap / 2} y={PT} width={barW} height={plotH} fill="transparent" />
+          <rect
+            x={cx + gap / 2}
+            y={PT + plotH - bfH}
+            width={barW}
+            height={bfH}
+            fill={`url(#bg_${gradId})`}
+            rx={3}
+            opacity={hover === "dij" ? 0.45 : 1}
+            stroke={hover === "bf" ? CHART.bellmanFord : "transparent"}
+            strokeWidth={hover === "bf" ? 1.5 : 0}
+            style={{ transition: "opacity 120ms ease" }}
+          />
+          <text
+            x={cx + barW / 2 + gap / 2}
+            y={PT + plotH - bfH - 6}
+            textAnchor="middle"
+            fontSize={hover === "bf" ? 13 : 11}
+            fontWeight={hover === "bf" ? 700 : 400}
+            fill={CHART.bellmanFord}
+          >
+            {bfVal.toFixed(4)}
+          </text>
+          <text x={cx + barW / 2 + gap / 2} y={PT + plotH + 18} textAnchor="middle" fontSize={12} fill={CHART.bellmanFord} fontWeight="700">
+            Bellman-Ford
+          </text>
+        </g>
 
         <line x1={PL} y1={PT} x2={PL} y2={PT + plotH} stroke={CHART.axis} />
         <line x1={PL} y1={PT + plotH} x2={W - PR} y2={PT + plotH} stroke={CHART.axis} />
@@ -148,7 +185,7 @@ export default function PageParte2() {
 
     fetch("/out/parte2/demos_pesos_negativos.json")
       .then((r) => r.json())
-      .then(setDemos)
+      .then((j) => setDemos(Array.isArray(j) ? j : j.demos ?? []))
       .catch(() => {});
 
     fetch("/out/parte2/exploracao_bfs_dfs.json")

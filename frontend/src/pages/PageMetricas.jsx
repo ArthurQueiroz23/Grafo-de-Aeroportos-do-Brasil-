@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { BarChart3 } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader.jsx";
+import InsightGrid from "../components/ui/InsightGrid.jsx";
 import { LoadingCenter } from "../components/ui/LoadingState.jsx";
 import { InteractiveListTable } from "../components/ui/interactive-logs-table-shadcnui.jsx";
 import {
@@ -8,28 +9,32 @@ import {
   mapEgo,
   mapGrausRanking,
 } from "../lib/interactive-list-adapters.js";
+import { insightsGraus, insightsRegioes } from "../lib/insights.js";
 import { REGION_HEX, CHART } from "../constants/theme.js";
 
 function DegreeHistogram({ graus }) {
-  const data = useMemo(() => {
-    if (!graus.length) return [];
+  const [hover, setHover] = useState(null);
+
+  const { bars, binSize, total } = useMemo(() => {
+    if (!graus.length) return { bars: [], binSize: 1, total: 0 };
     const degrees = graus.map((g) => parseInt(g.grau)).filter((d) => !isNaN(d));
     const maxDeg = Math.max(...degrees);
     const NUM_BINS = Math.min(14, maxDeg + 1);
-    const binSize = Math.max(1, Math.ceil(maxDeg / NUM_BINS));
+    const bs = Math.max(1, Math.ceil(maxDeg / NUM_BINS));
     const bins = {};
     degrees.forEach((d) => {
-      const key = Math.floor(d / binSize) * binSize;
+      const key = Math.floor(d / bs) * bs;
       bins[key] = (bins[key] || 0) + 1;
     });
-    return Object.entries(bins)
+    const bars = Object.entries(bins)
       .map(([k, v]) => ({ start: parseInt(k), count: v }))
       .sort((a, b) => a.start - b.start);
+    return { bars, binSize: bs, total: degrees.length };
   }, [graus]);
 
-  if (!data.length) return <LoadingCenter label="Aguardando dados do histograma…" />;
+  if (!bars.length) return <LoadingCenter label="Aguardando dados do histograma…" />;
 
-  const maxCount = Math.max(...data.map((b) => b.count));
+  const maxCount = Math.max(...bars.map((b) => b.count));
   const W = 620,
     H = 240,
     PL = 50,
@@ -38,105 +43,153 @@ function DegreeHistogram({ graus }) {
     PB = 55;
   const plotW = W - PL - PR;
   const plotH = H - PT - PB;
-  const barW = Math.max(4, plotW / data.length - 3);
+  const barW = Math.max(4, plotW / bars.length - 3);
+
+  const faixa = (b) =>
+    binSize > 1 ? `${b.start}–${b.start + binSize - 1}` : `${b.start}`;
+
+  const ativo = hover != null ? bars[hover] : null;
 
   return (
-    <svg
-      width="100%"
-      viewBox={`0 0 ${W} ${H}`}
-      style={{ fontFamily: "var(--font-body)", overflow: "visible" }}
-      role="img"
-      aria-label="Histograma da distribuição de graus"
-    >
-      <defs>
-        <linearGradient id="histGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={CHART.accent} />
-          <stop offset="100%" stopColor={CHART.primary} />
-        </linearGradient>
-      </defs>
-      {[0.25, 0.5, 0.75, 1.0].map((frac) => {
-        const y = PT + (1 - frac) * plotH;
-        return (
-          <g key={frac}>
-            <line x1={PL} y1={y} x2={W - PR} y2={y} stroke={CHART.grid} />
-            <text
-              x={PL - 6}
-              y={y + 4}
-              textAnchor="end"
-              fontSize={10}
-              fill={CHART.label}
+    <div>
+      <div
+        aria-live="polite"
+        style={{
+          minHeight: 22,
+          marginBottom: "var(--space-2)",
+          fontSize: "var(--text-caption)",
+          color: "var(--color-text-muted)",
+        }}
+      >
+        {ativo ? (
+          <>
+            <strong style={{ color: "var(--color-primary)" }}>{ativo.count}</strong>{" "}
+            aeroporto{ativo.count !== 1 ? "s" : ""} com grau{" "}
+            <strong style={{ color: "var(--color-text)" }}>{faixa(ativo)}</strong>
+            {total > 0 && (
+              <> · {((ativo.count / total) * 100).toFixed(0)}% da malha</>
+            )}
+          </>
+        ) : (
+          "Passe o mouse sobre uma barra para ver a contagem exata."
+        )}
+      </div>
+      <svg
+        width="100%"
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ fontFamily: "var(--font-body)", overflow: "visible" }}
+        role="img"
+        aria-label="Histograma da distribuição de graus"
+      >
+        <defs>
+          <linearGradient id="histGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={CHART.accent} />
+            <stop offset="100%" stopColor={CHART.primary} />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75, 1.0].map((frac) => {
+          const y = PT + (1 - frac) * plotH;
+          return (
+            <g key={frac}>
+              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke={CHART.grid} />
+              <text
+                x={PL - 6}
+                y={y + 4}
+                textAnchor="end"
+                fontSize={11.5}
+                fill={CHART.label}
+              >
+                {Math.round(frac * maxCount)}
+              </text>
+            </g>
+          );
+        })}
+        {bars.map((bin, i) => {
+          const x = PL + i * (plotW / bars.length);
+          const bH = (bin.count / maxCount) * plotH;
+          const y = PT + plotH - bH;
+          const isHover = hover === i;
+          const dim = hover != null && !isHover;
+          return (
+            <g
+              key={bin.start}
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(null)}
+              style={{ cursor: "pointer" }}
             >
-              {Math.round(frac * maxCount)}
-            </text>
-          </g>
-        );
-      })}
-      {data.map((bin, i) => {
-        const x = PL + i * (plotW / data.length);
-        const bH = (bin.count / maxCount) * plotH;
-        const y = PT + plotH - bH;
-        return (
-          <g key={bin.start}>
-            <rect
-              x={x + 1}
-              y={y}
-              width={barW}
-              height={bH}
-              fill="url(#histGrad)"
-              rx={3}
-              opacity={0.9}
-            />
-            {bin.count > 0 && (
+              {/* área de hover (cobre toda a coluna p/ facilitar o mouse) */}
+              <rect
+                x={x}
+                y={PT}
+                width={plotW / bars.length}
+                height={plotH}
+                fill="transparent"
+              />
+              <rect
+                x={x + 1}
+                y={y}
+                width={barW}
+                height={bH}
+                fill="url(#histGrad)"
+                rx={3}
+                opacity={dim ? 0.4 : isHover ? 1 : 0.9}
+                stroke={isHover ? CHART.primary : "transparent"}
+                strokeWidth={isHover ? 1.5 : 0}
+                style={{ transition: "opacity 120ms ease" }}
+              />
+              {bin.count > 0 && (
+                <text
+                  x={x + barW / 2 + 1}
+                  y={y - 4}
+                  textAnchor="middle"
+                  fontSize={isHover ? 12 : 10}
+                  fontWeight={isHover ? 700 : 400}
+                  fill={isHover ? CHART.primary : CHART.labelStrong}
+                >
+                  {bin.count}
+                </text>
+              )}
               <text
                 x={x + barW / 2 + 1}
-                y={y - 4}
+                y={PT + plotH + 16}
                 textAnchor="middle"
-                fontSize={10}
-                fill={CHART.labelStrong}
+                fontSize={11.5}
+                fill={isHover ? CHART.labelStrong : CHART.label}
               >
-                {bin.count}
+                {faixa(bin)}
               </text>
-            )}
-            <text
-              x={x + barW / 2 + 1}
-              y={PT + plotH + 16}
-              textAnchor="middle"
-              fontSize={10}
-              fill={CHART.label}
-            >
-              {bin.start}
-            </text>
-          </g>
-        );
-      })}
-      <line x1={PL} y1={PT} x2={PL} y2={PT + plotH} stroke={CHART.axis} />
-      <line
-        x1={PL}
-        y1={PT + plotH}
-        x2={W - PR}
-        y2={PT + plotH}
-        stroke={CHART.axis}
-      />
-      <text
-        x={W / 2}
-        y={PT + plotH + 40}
-        textAnchor="middle"
-        fontSize={12}
-        fill={CHART.label}
-      >
-        Grau (número de conexões por aeroporto)
-      </text>
-      <text
-        x={14}
-        y={PT + plotH / 2}
-        textAnchor="middle"
-        fontSize={12}
-        fill={CHART.label}
-        transform={`rotate(-90, 14, ${PT + plotH / 2})`}
-      >
-        Frequência
-      </text>
-    </svg>
+            </g>
+          );
+        })}
+        <line x1={PL} y1={PT} x2={PL} y2={PT + plotH} stroke={CHART.axis} />
+        <line
+          x1={PL}
+          y1={PT + plotH}
+          x2={W - PR}
+          y2={PT + plotH}
+          stroke={CHART.axis}
+        />
+        <text
+          x={W / 2}
+          y={PT + plotH + 40}
+          textAnchor="middle"
+          fontSize={14}
+          fill={CHART.label}
+        >
+          Grau (número de conexões por aeroporto)
+        </text>
+        <text
+          x={14}
+          y={PT + plotH / 2}
+          textAnchor="middle"
+          fontSize={14}
+          fill={CHART.label}
+          transform={`rotate(-90, 14, ${PT + plotH / 2})`}
+        >
+          Frequência
+        </text>
+      </svg>
+    </div>
   );
 }
 
@@ -211,8 +264,13 @@ export default function PageMetricas() {
   const [ego, setEgo] = useState([]);
   const [graus, setGraus] = useState([]);
 
+  const grausInsights = useMemo(() => insightsGraus(graus), [graus]);
+  const regioesInsights = useMemo(() => insightsRegioes(regioes), [regioes]);
+
   useEffect(() => {
-    fetch("/out/regioes.json").then((r) => r.json()).then(setRegioes);
+    fetch("/out/regioes.json")
+      .then((r) => r.json())
+      .then((j) => setRegioes(Array.isArray(j) ? j : j.regioes ?? []));
     fetch("/out/ego_aeroportos.csv")
       .then((r) => r.text())
       .then((t) => setEgo(parseCSV(t)));
@@ -300,6 +358,12 @@ export default function PageMetricas() {
                 searchPlaceholder="Buscar por região, ordem ou densidade…"
                 filterLabels={{ level: "Região" }}
               />
+
+              {regioesInsights.length > 0 && (
+                <div style={{ marginTop: "var(--space-6)" }}>
+                  <InsightGrid insights={regioesInsights} />
+                </div>
+              )}
             </>
           )}
         </section>
@@ -371,19 +435,19 @@ export default function PageMetricas() {
       {tab === "distribuicao" && (
         <section className="section">
           <h2 className="section-title">
-            Distribuição de Graus — Visão Exploratória
+            <BarChart3 size={18} strokeWidth={1.75} aria-hidden="true" />
+            Distribuição de Graus
           </h2>
           <p className="section-lead">
-            Histograma da distribuição de graus da rede. A concentração de nós com baixo grau e
-            poucos hubs com grau elevado é característica de redes{" "}
-            <strong>livre de escala</strong>. Barras agrupadas por proximidade seguindo a{" "}
-            <em>Lei da Proximidade</em> (Gestalt).
-          </p>
-          <p className="section-lead" style={{ marginTop: 0 }}>
-            Insight: a maioria dos aeroportos tem poucas conexões diretas, enquanto GRU, CGH e GIG
-            concentram a maior parte das rotas — padrão típico de hub-and-spoke.
+            Quantos aeroportos possuem cada grau de conectividade. O gráfico é interativo:
+            passe o mouse sobre uma barra para ver a contagem exata e a fração da malha.
           </p>
           <DegreeHistogram graus={graus} />
+          {grausInsights.length > 0 && (
+            <div style={{ marginTop: "var(--space-6)" }}>
+              <InsightGrid insights={grausInsights} />
+            </div>
+          )}
         </section>
       )}
     </>
