@@ -4,9 +4,10 @@ export default function ChartSequence({ images, onOpen }) {
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-8)",
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(460px, 100%), 1fr))",
+        gap: "var(--space-6)",
+        alignItems: "start",
       }}
     >
       {images.map((img, i) => (
@@ -86,7 +87,6 @@ export default function ChartSequence({ images, onOpen }) {
               style={{
                 display: "block",
                 width: "100%",
-                maxWidth: 760,
                 margin: "0 auto",
                 borderRadius: "var(--radius-md)",
               }}

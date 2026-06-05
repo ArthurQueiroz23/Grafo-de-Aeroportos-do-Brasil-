@@ -33,7 +33,9 @@
 /* ── KPI grid ── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  /* auto-fit faz os cards esticarem para ocupar a linha inteira quando há
+     menos itens do que colunas possíveis (evita espaço vazio à direita). */
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-5);
 }
@@ -451,7 +453,7 @@
 /* ── Callouts / legend chips ── */
 .callout-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
@@ -523,7 +525,7 @@
 /* ── Region mini cards ── */
 .region-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
@@ -769,13 +771,13 @@
 }
 
 .globe-rotas--solo {
-  max-width: min(860px, 100%);
+  max-width: min(1040px, 100%);
   margin: 0 auto;
   width: 100%;
 }
 
 .globe-rotas--solo .globe-rotas__canvas {
-  max-width: min(760px, 100%);
+  max-width: min(940px, 100%);
   margin: 0 auto;
 }
 
@@ -1208,7 +1210,7 @@
 /* ── Images ── */
 .img-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: var(--space-4);
 }
 
@@ -1364,7 +1366,7 @@
 
 .skeleton-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: var(--space-4);
   margin-bottom: var(--space-5);
 }
@@ -1535,6 +1537,9 @@
   animation: fadeSlideIn var(--duration-slow) var(--ease-out);
   max-width: var(--content-max);
   width: 100%;
+  /* centraliza o conteúdo quando a tela é mais larga que o limite, evitando
+     uma faixa de fundo vazia só de um lado */
+  margin-inline: auto;
 }
 
 .page-parte2 .page-title {
