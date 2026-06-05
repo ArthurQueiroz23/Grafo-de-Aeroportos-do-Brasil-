@@ -11,6 +11,7 @@ import {
 } from "../lib/interactive-list-adapters.js";
 import { insightsGraus, insightsRegioes } from "../lib/insights.js";
 import { REGION_HEX, CHART } from "../constants/theme.js";
+import { parseCSV } from "../lib/graphUtils.js";
 
 function DegreeHistogram({ graus }) {
   const [hover, setHover] = useState(null);
@@ -191,19 +192,6 @@ function DegreeHistogram({ graus }) {
       </svg>
     </div>
   );
-}
-
-function parseCSV(text) {
-  const [header, ...lines] = text.trim().split("\n");
-  const keys = header.split(",");
-  return lines.map((l) => {
-    const vals = l.split(",");
-    const obj = {};
-    keys.forEach((k, i) => {
-      obj[k.trim()] = vals[i] ? vals[i].trim() : "";
-    });
-    return obj;
-  });
 }
 
 function HubRanking({ graus }) {

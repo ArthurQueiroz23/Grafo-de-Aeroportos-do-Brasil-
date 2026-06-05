@@ -5,6 +5,7 @@ import PageHeader from "../components/ui/PageHeader.jsx";
 import AppButton from "../components/ui/AppButton.jsx";
 import InsightGrid from "../components/ui/InsightGrid.jsx";
 import { SkeletonGraph, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
+<<<<<<< HEAD
 import { insightsRede } from "../lib/insights.js";
 
 function parseCSV(text) {
@@ -43,26 +44,32 @@ function dijkstra(graph, start, end) {
   while (cur !== undefined) { path.unshift(cur); cur = prev[cur]; }
   return { cost: dist[end], path };
 }
+=======
+import { parseCSV, buildGraph, dijkstra } from "../lib/graphUtils.js";
+>>>>>>> 0c5c3a98f82506737cfe9fc3797afe541d03b9f7
 
 const GESTALT_LEGEND = [
-  { color: "var(--region-nordeste)", title: "Gestalt — Similaridade", desc: "Cor do nó identifica a região geográfica" },
-  { color: "var(--color-primary)", title: "Gestalt — Conectividade", desc: "Espessura e opacidade da aresta ∝ peso" },
-  { color: "var(--color-accent)", title: "Hierarquia Visual", desc: "Hubs são maiores e têm destaque luminoso" },
-  { color: "var(--region-sul)", title: "Figura-Fundo", desc: "Fundo escuro destaca caminhos coloridos" },
+  { color: "var(--region-nordeste)", title: "Gestalt — Similaridade",   desc: "Cor do nó identifica a região geográfica" },
+  { color: "var(--color-primary)",   title: "Gestalt — Conectividade",  desc: "Espessura e opacidade da aresta ∝ peso" },
+  { color: "var(--color-accent)",    title: "Hierarquia Visual",        desc: "Hubs são maiores e têm destaque luminoso" },
+  { color: "var(--region-sul)",      title: "Figura-Fundo",             desc: "Fundo escuro destaca caminhos coloridos" },
 ];
 
 export default function PageGeral() {
-  const [global, setGlobal] = useState(null);
-  const [rankings, setRankings] = useState(null);
+  const [global, setGlobal]       = useState(null);
+  const [rankings, setRankings]   = useState(null);
   const [graphData, setGraphData] = useState(null);
   const [regionMap, setRegionMap] = useState({});
+<<<<<<< HEAD
   const [grauMap, setGrauMap] = useState({});
   const [regioes, setRegioes] = useState([]);
   const [routes, setRoutes] = useState([]);
+=======
+  const [grauMap, setGrauMap]     = useState({});
+>>>>>>> 0c5c3a98f82506737cfe9fc3797afe541d03b9f7
 
-  /* path-finder state */
-  const [pathFrom, setPathFrom] = useState("");
-  const [pathTo, setPathTo] = useState("");
+  const [pathFrom, setPathFrom]     = useState("");
+  const [pathTo, setPathTo]         = useState("");
   const [pathResult, setPathResult] = useState(null);
 
   useEffect(() => {
@@ -126,15 +133,7 @@ export default function PageGeral() {
 
   const graph = useMemo(() => {
     if (!graphData?.adjRows) return {};
-    const g = {};
-    graphData.adjRows.forEach(({ origem, destino, peso }) => {
-      const w = parseFloat(peso) || 1;
-      if (!g[origem]) g[origem] = {};
-      if (!g[destino]) g[destino] = {};
-      g[origem][destino] = w;
-      g[destino][origem] = w;
-    });
-    return g;
+    return buildGraph(graphData.adjRows);
   }, [graphData]);
 
   const airportList = useMemo(
@@ -142,10 +141,7 @@ export default function PageGeral() {
     [graphData]
   );
 
-  const highlightPath = useMemo(
-    () => pathResult?.path ?? [],
-    [pathResult]
-  );
+  const highlightPath = useMemo(() => pathResult?.path ?? [], [pathResult]);
 
   const pathPairs = useMemo(() => {
     const p = highlightPath;
@@ -176,8 +172,7 @@ export default function PageGeral() {
   const handleFindRoute = () => {
     if (!pathFrom || !pathTo || pathFrom === pathTo) return;
     if (!graph[pathFrom] || !graph[pathTo]) return;
-    const result = dijkstra(graph, pathFrom, pathTo);
-    setPathResult(result);
+    setPathResult(dijkstra(graph, pathFrom, pathTo));
   };
 
   const handleClearRoute = () => {
@@ -194,7 +189,7 @@ export default function PageGeral() {
         subtitle="Propriedades globais do grafo de aeroportos brasileiros e exploração interativa da malha aérea."
       />
 
-      {/* ── KPIs ─────────────────────────────── */}
+      {/* KPIs */}
       {!global ? (
         <SkeletonKpiGrid count={5} />
       ) : (
@@ -235,6 +230,7 @@ export default function PageGeral() {
         </div>
       )}
 
+<<<<<<< HEAD
       {/* ── Insights da rede ─────────────────── */}
       {redeInsights.length > 0 && (
         <section className="section">
@@ -251,6 +247,9 @@ export default function PageGeral() {
       )}
 
       {/* ── Top hubs ─────────────────────────── */}
+=======
+      {/* Top hubs */}
+>>>>>>> 0c5c3a98f82506737cfe9fc3797afe541d03b9f7
       {topHubs.length > 0 && (
         <section className="section">
           <h2 className="section-title">
@@ -266,8 +265,12 @@ export default function PageGeral() {
               const isTop = i < 3;
               return (
                 <div key={h.id} className="rank-row">
-                  <span className={`rank-pos${isTop ? " rank-pos--top" : ""}`}>{i + 1}</span>
-                  <span className={`rank-code${isTop ? " rank-code--top" : ""}`}>{h.id}</span>
+                  <span className={`rank-pos${isTop ? " rank-pos--top" : ""}`}>
+                    {i + 1}
+                  </span>
+                  <span className={`rank-code${isTop ? " rank-code--top" : ""}`}>
+                    {h.id}
+                  </span>
                   <div className="rank-bar-track">
                     <div className="rank-bar-fill" style={{ width: `${pct}%` }}>
                       {pct > 28 ? h.grau : ""}
@@ -293,24 +296,27 @@ export default function PageGeral() {
         </section>
       )}
 
-      {/* ── Grafo Interativo ─────────────────── */}
+      {/* Grafo interativo */}
       <section className="section">
         <h2 className="section-title">
           <Network size={18} strokeWidth={1.75} aria-hidden="true" />
           Grafo Interativo — Aeroportos Brasileiros
         </h2>
 
-        {/* Gestalt callouts */}
         <div className="callout-grid">
           {GESTALT_LEGEND.map((p) => (
-            <div key={p.title} className="callout" style={{ "--callout-color": p.color }}>
+            <div
+              key={p.title}
+              className="callout"
+              style={{ "--callout-color": p.color }}
+            >
               <div className="callout-title">{p.title}</div>
               <div className="callout-desc">{p.desc}</div>
             </div>
           ))}
         </div>
 
-        {/* Path-finder */}
+        {/* Buscador de rota mínima */}
         {graphData && airportList.length > 0 && (
           <div className="route-finder">
             <div className="route-finder__label">
@@ -319,40 +325,59 @@ export default function PageGeral() {
             </div>
             <div className="route-finder__controls">
               <div className="form-field">
-                <label className="form-label" htmlFor="geral-from">De</label>
+                <label className="form-label" htmlFor="geral-from">
+                  De
+                </label>
                 <select
                   id="geral-from"
                   className="ctrl-input ctrl-select"
                   style={{ minWidth: 130 }}
                   value={pathFrom}
-                  onChange={(e) => { setPathFrom(e.target.value); setPathResult(null); }}
+                  onChange={(e) => {
+                    setPathFrom(e.target.value);
+                    setPathResult(null);
+                  }}
                 >
                   <option value="">Origem</option>
                   {airportList.map((id) => (
-                    <option key={id} value={id}>{id}</option>
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div
-                style={{ display: "flex", alignItems: "center", paddingBottom: "var(--space-1)", color: "var(--color-text-subtle)" }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  paddingBottom: "var(--space-1)",
+                  color: "var(--color-text-subtle)",
+                }}
                 aria-hidden="true"
               >
                 <ArrowRight size={20} strokeWidth={1.5} />
               </div>
 
               <div className="form-field">
-                <label className="form-label" htmlFor="geral-to">Para</label>
+                <label className="form-label" htmlFor="geral-to">
+                  Para
+                </label>
                 <select
                   id="geral-to"
                   className="ctrl-input ctrl-select"
                   style={{ minWidth: 130 }}
                   value={pathTo}
-                  onChange={(e) => { setPathTo(e.target.value); setPathResult(null); }}
+                  onChange={(e) => {
+                    setPathTo(e.target.value);
+                    setPathResult(null);
+                  }}
                 >
                   <option value="">Destino</option>
                   {airportList.map((id) => (
-                    <option key={id} value={id}>{id}</option>
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -367,14 +392,18 @@ export default function PageGeral() {
               </AppButton>
 
               {pathResult && (
-                <AppButton variant="ghost" size="sm" onClick={handleClearRoute} aria-label="Limpar rota">
+                <AppButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearRoute}
+                  aria-label="Limpar rota"
+                >
                   <X size={14} aria-hidden="true" />
                   Limpar
                 </AppButton>
               )}
             </div>
 
-            {/* Path result display */}
             {pathResult && pathResult.path.length > 0 && (
               <div style={{ marginTop: "var(--space-4)" }}>
                 <div className="route-finder__path-meta">
@@ -385,8 +414,7 @@ export default function PageGeral() {
                     </strong>
                   </span>
                   <span>
-                    Saltos:{" "}
-                    <strong>{pathResult.path.length - 1}</strong>
+                    Saltos: <strong>{pathResult.path.length - 1}</strong>
                   </span>
                   {pathResult.path.length > 2 && (
                     <span>
@@ -395,7 +423,10 @@ export default function PageGeral() {
                     </span>
                   )}
                 </div>
-                <div className="result-path" style={{ marginTop: "var(--space-2)" }}>
+                <div
+                  className="result-path"
+                  style={{ marginTop: "var(--space-2)" }}
+                >
                   {pathResult.path.map((node, i) => (
                     <span key={`${node}-${i}`}>
                       <strong
@@ -420,14 +451,20 @@ export default function PageGeral() {
             )}
 
             {pathResult && pathResult.path.length === 0 && (
-              <div className="alert alert--error" style={{ marginTop: "var(--space-3)" }}>
+              <div
+                className="alert alert--error"
+                style={{ marginTop: "var(--space-3)" }}
+              >
                 Não existe caminho entre <strong>{pathFrom}</strong> e{" "}
                 <strong>{pathTo}</strong> na malha atual.
               </div>
             )}
 
             {pathFrom && pathTo && pathFrom === pathTo && (
-              <div className="alert alert--warning" style={{ marginTop: "var(--space-3)" }}>
+              <div
+                className="alert alert--warning"
+                style={{ marginTop: "var(--space-3)" }}
+              >
                 Origem e destino são iguais. Selecione aeroportos diferentes.
               </div>
             )}

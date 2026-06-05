@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Route, ArrowRight, GitCompare, MapPin, Flag } from "lucide-react";
 import GrafoVis from "../components/GrafoVis.jsx";
 import PageHeader from "../components/ui/PageHeader.jsx";
+import { dijkstra, bellmanFord, buildGraph } from "../lib/graphUtils.js";
 
 function parseAdjCSV(text) {
   const lines = text.trim().split("\n").slice(1);
@@ -15,82 +16,19 @@ function parseAdjCSV(text) {
   });
 }
 
-function buildGraph(rows) {
-  const g = {};
-  for (const { origem, destino, peso } of rows) {
-    const w = parseFloat(peso) || 1;
-    if (!g[origem]) g[origem] = {};
-    if (!g[destino]) g[destino] = {};
-    g[origem][destino] = w;
-    g[destino][origem] = w;
-  }
-  return g;
-}
-
-function dijkstra(graph, start, end) {
-  const dist = {};
-  const prev = {};
-  const visited = new Set();
-  for (const n of Object.keys(graph)) dist[n] = Infinity;
-  dist[start] = 0;
-  const pq = [[0, start]];
-  while (pq.length > 0) {
-    pq.sort((a, b) => a[0] - b[0]);
-    const [d, u] = pq.shift();
-    if (visited.has(u)) continue;
-    visited.add(u);
-    if (u === end) break;
-    for (const [v, w] of Object.entries(graph[u] || {})) {
-      const nd = d + w;
-      if (nd < dist[v]) { dist[v] = nd; prev[v] = u; pq.push([nd, v]); }
-    }
-  }
-  if (dist[end] === Infinity) return { cost: Infinity, path: [] };
-  const path = [];
-  let cur = end;
-  while (cur !== undefined) { path.unshift(cur); cur = prev[cur]; }
-  return { cost: dist[end], path };
-}
-
-function bellmanFord(graph, start, end) {
-  const nodes = Object.keys(graph);
-  const dist = {};
-  const prev = {};
-  for (const n of nodes) dist[n] = Infinity;
-  dist[start] = 0;
-  for (let i = 0; i < nodes.length - 1; i++) {
-    let updated = false;
-    for (const u of nodes) {
-      if (dist[u] === Infinity) continue;
-      for (const [v, w] of Object.entries(graph[u] || {})) {
-        const nd = dist[u] + w;
-        if (nd < dist[v]) { dist[v] = nd; prev[v] = u; updated = true; }
-      }
-    }
-    if (!updated) break;
-  }
-  if (dist[end] === Infinity) return { cost: Infinity, path: [] };
-  const path = [];
-  let cur = end;
-  while (cur !== undefined) { path.unshift(cur); cur = prev[cur]; }
-  return { cost: dist[end], path };
-}
-
 const ALGOS = [
-  { id: "dijkstra", label: "Dijkstra" },
+  { id: "dijkstra",    label: "Dijkstra" },
   { id: "bellman-ford", label: "Bellman-Ford" },
-  { id: "comparar", label: "Comparar" },
+  { id: "comparar",    label: "Comparar" },
 ];
 
-/* ── PathDisplay — rich full-path display ───────────────────── */
-function PathDisplay({ path, color, label }) {
+function PathDisplay({ path, color }) {
   if (!path || path.length === 0) return null;
   const hops = path.length - 1;
   const intermediaries = Math.max(0, path.length - 2);
 
   return (
     <div className="path-display-block">
-      {/* meta row */}
       <div className="path-display-meta">
         <span className="path-meta-chip">
           <MapPin size={11} aria-hidden="true" />
@@ -101,7 +39,9 @@ function PathDisplay({ path, color, label }) {
           <Flag size={11} aria-hidden="true" />
           {path[path.length - 1]}
         </span>
-        <span className="path-meta-stat">{hops} salto{hops !== 1 ? "s" : ""}</span>
+        <span className="path-meta-stat">
+          {hops} salto{hops !== 1 ? "s" : ""}
+        </span>
         {intermediaries > 0 && (
           <span className="path-meta-stat">
             {intermediaries} intermediário{intermediaries !== 1 ? "s" : ""}
@@ -109,7 +49,6 @@ function PathDisplay({ path, color, label }) {
         )}
       </div>
 
-      {/* full path */}
       <div
         className="result-path"
         aria-live="polite"
@@ -188,7 +127,8 @@ export default function PageCalculadora() {
       const gMap = {};
       grausLines.forEach((l) => {
         const parts = l.split(",");
-        if (parts[0] && parts[1]) gMap[parts[0].trim()] = parseInt(parts[1].trim()) || 1;
+        if (parts[0] && parts[1])
+          gMap[parts[0].trim()] = parseInt(parts[1].trim()) || 1;
       });
       setGrauMap(gMap);
     });
@@ -197,7 +137,12 @@ export default function PageCalculadora() {
   const graph = useMemo(() => buildGraph(adjRows), [adjRows]);
   const vertices = useMemo(() => Object.keys(graph).sort(), [graph]);
   const edges = useMemo(
-    () => adjRows.map((r) => ({ from: r.origem, to: r.destino, weight: parseFloat(r.peso) || 1 })),
+    () =>
+      adjRows.map((r) => ({
+        from: r.origem,
+        to: r.destino,
+        weight: parseFloat(r.peso) || 1,
+      })),
     [adjRows]
   );
 
@@ -213,10 +158,18 @@ export default function PageCalculadora() {
 
   const resultado = algo === "bellman-ford" ? resultadoBF : resultadoDijkstra;
 
+  // O grafo sempre destaca a rota do algoritmo selecionado.
+  // No modo "comparar", mostra a rota Dijkstra por padrão.
   const highlightPath = useMemo(() => {
     if (algo === "bellman-ford") return resultadoBF?.path ?? [];
     return resultadoDijkstra?.path ?? [];
   }, [algo, resultadoDijkstra, resultadoBF]);
+
+  const algoLabel = useMemo(() => {
+    if (algo === "bellman-ford") return "Bellman-Ford";
+    if (algo === "comparar") return "Dijkstra";
+    return "Dijkstra";
+  }, [algo]);
 
   const igual = origem === destino;
   const semCaminho = !igual && resultado && resultado.path.length === 0;
@@ -225,7 +178,7 @@ export default function PageCalculadora() {
     algo === "comparar" &&
     resultadoDijkstra?.path.length > 0 &&
     resultadoBF?.path.length > 0;
-  const costasIguais =
+  const custosIguais =
     temComparacao &&
     Math.abs(resultadoDijkstra.cost - resultadoBF.cost) < 1e-9;
 
@@ -243,7 +196,12 @@ export default function PageCalculadora() {
           Selecionar rota
         </h2>
 
-        <div className="tabs" role="tablist" aria-label="Algoritmo de roteamento" style={{ marginBottom: "var(--space-5)" }}>
+        <div
+          className="tabs"
+          role="tablist"
+          aria-label="Algoritmo de roteamento"
+          style={{ marginBottom: "var(--space-5)" }}
+        >
           {ALGOS.map((a) => (
             <button
               key={a.id}
@@ -254,7 +212,11 @@ export default function PageCalculadora() {
               onClick={() => setAlgo(a.id)}
             >
               {a.id === "comparar" && (
-                <GitCompare size={12} style={{ marginRight: 4 }} aria-hidden="true" />
+                <GitCompare
+                  size={12}
+                  style={{ marginRight: 4 }}
+                  aria-hidden="true"
+                />
               )}
               {a.label}
             </button>
@@ -263,7 +225,9 @@ export default function PageCalculadora() {
 
         <div className="form-row">
           <div className="form-field">
-            <label className="form-label" htmlFor="calc-origem">Origem</label>
+            <label className="form-label" htmlFor="calc-origem">
+              Origem
+            </label>
             <select
               id="calc-origem"
               className="ctrl-input ctrl-select"
@@ -272,20 +236,29 @@ export default function PageCalculadora() {
               onChange={(e) => setOrigem(e.target.value)}
             >
               {vertices.map((v) => (
-                <option key={v} value={v}>{v}</option>
+                <option key={v} value={v}>
+                  {v}
+                </option>
               ))}
             </select>
           </div>
 
           <div
-            style={{ display: "flex", alignItems: "center", paddingBottom: "var(--space-1)", color: "var(--color-text-subtle)" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              paddingBottom: "var(--space-1)",
+              color: "var(--color-text-subtle)",
+            }}
             aria-hidden="true"
           >
             <ArrowRight size={22} strokeWidth={1.5} />
           </div>
 
           <div className="form-field">
-            <label className="form-label" htmlFor="calc-destino">Destino</label>
+            <label className="form-label" htmlFor="calc-destino">
+              Destino
+            </label>
             <select
               id="calc-destino"
               className="ctrl-input ctrl-select"
@@ -294,26 +267,36 @@ export default function PageCalculadora() {
               onChange={(e) => setDestino(e.target.value)}
             >
               {vertices.map((v) => (
-                <option key={v} value={v}>{v}</option>
+                <option key={v} value={v}>
+                  {v}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
         {igual && (
-          <div className="alert alert--warning" role="alert" style={{ marginTop: "var(--space-4)" }}>
+          <div
+            className="alert alert--warning"
+            role="alert"
+            style={{ marginTop: "var(--space-4)" }}
+          >
             Origem e destino são iguais. Selecione aeroportos diferentes.
           </div>
         )}
 
         {semCaminho && (
-          <div className="alert alert--error" role="alert" style={{ marginTop: "var(--space-4)" }}>
+          <div
+            className="alert alert--error"
+            role="alert"
+            style={{ marginTop: "var(--space-4)" }}
+          >
             Não existe caminho entre <strong>{origem}</strong> e{" "}
             <strong>{destino}</strong> na malha atual.
           </div>
         )}
 
-        {/* Single algorithm result */}
+        {/* Resultado — algoritmo único */}
         {temCaminho && algo !== "comparar" && (
           <>
             <div className="kpi-grid" style={{ marginTop: "var(--space-6)" }}>
@@ -329,7 +312,9 @@ export default function PageCalculadora() {
               </div>
               <div className="kpi-card">
                 <div className="kpi-label">Intermediários</div>
-                <div className="kpi-value">{Math.max(0, resultado.path.length - 2)}</div>
+                <div className="kpi-value">
+                  {Math.max(0, resultado.path.length - 2)}
+                </div>
                 <div className="kpi-unit">nós de passagem</div>
               </div>
             </div>
@@ -337,21 +322,28 @@ export default function PageCalculadora() {
           </>
         )}
 
-        {/* Comparison mode */}
+        {/* Resultado — modo comparação */}
         {temComparacao && (
           <>
-            <div className="two-col" style={{ marginTop: "var(--space-6)" }}>
+            <div
+              className="two-col"
+              style={{ marginTop: "var(--space-6)" }}
+            >
               <div>
                 <AlgoLabel label="Dijkstra" color="var(--color-primary)" />
                 <div className="kpi-grid">
                   <div className="kpi-card">
                     <div className="kpi-label">Custo total</div>
-                    <div className="kpi-value">{resultadoDijkstra.cost.toFixed(1)}</div>
+                    <div className="kpi-value">
+                      {resultadoDijkstra.cost.toFixed(1)}
+                    </div>
                     <div className="kpi-unit">peso acumulado</div>
                   </div>
                   <div className="kpi-card">
                     <div className="kpi-label">Saltos</div>
-                    <div className="kpi-value">{resultadoDijkstra.path.length - 1}</div>
+                    <div className="kpi-value">
+                      {resultadoDijkstra.path.length - 1}
+                    </div>
                     <div className="kpi-unit">arestas</div>
                   </div>
                 </div>
@@ -359,27 +351,43 @@ export default function PageCalculadora() {
               </div>
 
               <div>
-                <AlgoLabel label="Bellman-Ford" color="var(--color-accent)" />
+                <AlgoLabel
+                  label="Bellman-Ford"
+                  color="var(--color-accent)"
+                />
                 <div className="kpi-grid">
                   <div className="kpi-card">
                     <div className="kpi-label">Custo total</div>
-                    <div className="kpi-value">{resultadoBF.cost.toFixed(1)}</div>
+                    <div className="kpi-value">
+                      {resultadoBF.cost.toFixed(1)}
+                    </div>
                     <div className="kpi-unit">peso acumulado</div>
                   </div>
                   <div className="kpi-card">
                     <div className="kpi-label">Saltos</div>
-                    <div className="kpi-value">{resultadoBF.path.length - 1}</div>
+                    <div className="kpi-value">
+                      {resultadoBF.path.length - 1}
+                    </div>
                     <div className="kpi-unit">arestas</div>
                   </div>
                 </div>
-                <PathDisplay path={resultadoBF.path} color="var(--color-accent)" />
+                <PathDisplay
+                  path={resultadoBF.path}
+                  color="var(--color-accent)"
+                />
               </div>
             </div>
 
             <div className="insight-box">
               Dijkstra e Bellman-Ford produziram{" "}
-              <strong style={{ color: costasIguais ? "var(--color-success)" : "var(--color-danger)" }}>
-                {costasIguais ? "resultados idênticos" : "resultados diferentes"}
+              <strong
+                style={{
+                  color: custosIguais
+                    ? "var(--color-success)"
+                    : "var(--color-danger)",
+                }}
+              >
+                {custosIguais ? "resultados idênticos" : "resultados diferentes"}
               </strong>{" "}
               — custo{" "}
               <strong style={{ color: "var(--color-primary)" }}>
@@ -400,10 +408,7 @@ export default function PageCalculadora() {
             Grafo interativo
             {(temCaminho || temComparacao) && (
               <span className="section-title-hint">
-                — arestas âmbar ={" "}
-                {algo === "comparar"
-                  ? "rota Dijkstra"
-                  : `rota ${ALGOS.find((a) => a.id === algo)?.label}`}
+                — âmbar = origem · verde = destino · branco = intermediário
               </span>
             )}
           </h2>
@@ -413,6 +418,7 @@ export default function PageCalculadora() {
             highlightPath={highlightPath}
             regionMap={regionMap}
             grauMap={grauMap}
+            algoLabel={algoLabel}
           />
         </section>
       )}

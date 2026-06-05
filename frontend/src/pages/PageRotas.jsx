@@ -4,19 +4,7 @@ import PageHeader from "../components/ui/PageHeader.jsx";
 import { LoadingCenter } from "../components/ui/LoadingState.jsx";
 import { InteractiveListTable } from "../components/ui/interactive-logs-table-shadcnui.jsx";
 import { mapRotas, mapGrausRanking } from "../lib/interactive-list-adapters.js";
-
-function parseCSV(text) {
-  const [header, ...lines] = text.trim().split("\n");
-  const keys = header.split(",");
-  return lines.map((l) => {
-    const vals = l.split(",");
-    const obj = {};
-    keys.forEach((k, i) => {
-      obj[k.trim()] = vals[i] ? vals[i].trim() : "";
-    });
-    return obj;
-  });
-}
+import { parseCSV } from "../lib/graphUtils.js";
 
 export default function PageRotas() {
   const [rotas, setRotas] = useState([]);
