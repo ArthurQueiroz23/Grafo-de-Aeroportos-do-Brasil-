@@ -6,6 +6,9 @@ import AppButton from "./ui/AppButton.jsx";
 import { REGION_HEX, GRAPH } from "../constants/theme.js";
 import { layoutAirports } from "./grafoLayout.js";
 
+// ms entre cada nó na fase de exploração (mais rápido que a animação de caminho)
+const EXPLORE_STEP_MS = 28;
+
 const NETWORK_OPTIONS = {
   autoResize: true,
   nodes: {
@@ -196,7 +199,7 @@ function getNeighbors(edgeList, nodeId) {
 const PATH_DEST_COLOR = "#3d9b8f";
 const PATH_DEST_GLOW  = "rgba(61,155,143,0.55)";
 
-function GraphLegend({ className = "", algoLabel = "Caminho mínimo" }) {
+function GraphLegend({ className = "", algoLabel = "Caminho mínimo", showExplore = false }) {
   return (
     <div className={`graph-legend-card ${className}`.trim()}>
       <div className="graph-legend-title">Legenda</div>
@@ -222,6 +225,14 @@ function GraphLegend({ className = "", algoLabel = "Caminho mínimo" }) {
           />
           {algoLabel} — destino
         </div>
+        {showExplore && (
+          <div className="graph-legend-item">
+            <span
+              className="graph-legend-swatch graph-legend-swatch--line graph-legend-swatch--explore"
+            />
+            Nós explorados
+          </div>
+        )}
         <div className="graph-legend-item">
           <span
             className="graph-legend-swatch graph-legend-swatch--line"
@@ -243,6 +254,7 @@ export default function GrafoVis({
   edges,
   mandatoryPairs,
   highlightPath = [],
+  explorationOrder = [],
   regionMap = {},
   grauMap = {},
   algoLabel = "Caminho mínimo",
@@ -741,6 +753,62 @@ export default function GrafoVis({
     }
   }, [clearAnimTimers, syncEdgeStyles, syncNodeStyles]);
 
+  // ── Animação de exploração — ilumina nós na ordem de visita do algoritmo ──────
+  // Roda ANTES de animatePathReveal; onComplete dispara a fase de caminho.
+  const animateExploration = useCallback(
+    (order, onComplete) => {
+      clearAnimTimers();
+      if (!order.length || !nodesRef.current) {
+        onComplete?.();
+        return;
+      }
+
+      // Não anima nós que serão destacados como caminho (ficam para a fase seguinte)
+      const pathSet = new Set(highlightPathRef.current);
+      const nodesToAnimate = order.filter((id) => !pathSet.has(id));
+
+      if (!nodesToAnimate.length) {
+        onComplete?.();
+        return;
+      }
+
+      nodesToAnimate.forEach((id, i) => {
+        const timer = setTimeout(() => {
+          if (!nodesRef.current) return;
+          const node = nodesRef.current.get(id);
+          if (!node || node.hidden) return;
+          nodesRef.current.update({
+            id,
+            opacity: 0.92,
+            size: node._baseSize + 4,
+            color: {
+              background: "rgba(107, 153, 200, 0.26)",
+              border: GRAPH.explore,
+              highlight: { background: "rgba(107, 153, 200, 0.48)", border: "#ffffff" },
+              hover:     { background: "rgba(107, 153, 200, 0.38)", border: "#ffffff" },
+            },
+            shadow: {
+              enabled: true,
+              color: GRAPH.exploreGlow,
+              size: 14,
+              x: 0,
+              y: 0,
+            },
+          });
+        }, i * EXPLORE_STEP_MS);
+        animTimersRef.current.push(timer);
+      });
+
+      // Breve pausa após exploração antes de revelar o caminho
+      const pauseTimer = setTimeout(
+        () => onComplete?.(),
+        nodesToAnimate.length * EXPLORE_STEP_MS + 220
+      );
+      animTimersRef.current.push(pauseTimer);
+    },
+    [clearAnimTimers]
+  );
+
   const applySelection = useCallback(
     (id) => {
       clearAnimTimers(); // seleção cancela qualquer animação em andamento
@@ -904,8 +972,9 @@ export default function GrafoVis({
     });
   }, [filterRegion, filterMinDegree, fitNetwork, syncEdgeStyles, syncNodeStyles, clearAnimTimers]);
 
-  // ── Reação ao highlightPath e routesOn ────────────────────────────────────
-  // Anima quando o caminho muda; sincroniza instantaneamente quando só routesOn muda
+  // ── Reação ao highlightPath, explorationOrder e routesOn ──────────────────
+  // Quando o caminho muda: (1) animação de exploração, (2) animação do caminho.
+  // Quando só routesOn muda: sincroniza estilos instantaneamente.
   useEffect(() => {
     const prev = prevPathRef.current;
     const pathChanged =
@@ -914,7 +983,11 @@ export default function GrafoVis({
     prevPathRef.current = highlightPath;
 
     if (pathChanged && highlightPath.length > 1) {
-      animatePathReveal(highlightPath);
+      if (explorationOrder.length > 0) {
+        animateExploration(explorationOrder, () => animatePathReveal(highlightPath));
+      } else {
+        animatePathReveal(highlightPath);
+      }
     } else {
       clearAnimTimers();
       const id = selectedIdRef.current;
@@ -922,7 +995,7 @@ export default function GrafoVis({
       setRouteCount(id ? count : 0);
       syncNodeStyles(id, highlightPath);
     }
-  }, [highlightPath, routesOn, syncEdgeStyles, syncNodeStyles, animatePathReveal, clearAnimTimers]);
+  }, [highlightPath, explorationOrder, routesOn, syncEdgeStyles, syncNodeStyles, animatePathReveal, animateExploration, clearAnimTimers]);
 
   const handleSearch = () => {
     const val = searchVal.trim().toUpperCase();
@@ -941,8 +1014,9 @@ export default function GrafoVis({
   const pathDest   = highlightPath.length > 1 ? highlightPath[highlightPath.length - 1] : null;
   const hasRoute   = highlightPath.length > 1;
 
+  const hasExploration = explorationOrder.length > 0;
   const hintText = hasRoute
-    ? `${algoLabel}: ${highlightPath.join(" → ")} — ${highlightPath.length - 1} salto${highlightPath.length - 1 !== 1 ? "s" : ""}`
+    ? `${algoLabel}: ${highlightPath.join(" → ")} — ${highlightPath.length - 1} salto${highlightPath.length - 1 !== 1 ? "s" : ""}${hasExploration ? ` · ${explorationOrder.length} nós explorados` : ""}`
     : selectedId
       ? `${selectedId}: ${routeCount} rota${routeCount !== 1 ? "s" : ""} direta${routeCount !== 1 ? "s" : ""} — clique no fundo ou em Limpar`
       : "Clique num aeroporto para explorar · Arraste para navegar · Scroll para zoom";
@@ -1104,7 +1178,11 @@ export default function GrafoVis({
       <div className={`graph-panel${selectedId ? " graph-panel--focused" : ""}${hasRoute ? " graph-panel--route" : ""}`}>
         <span className="graph-hint">{hintText}</span>
 
-        <GraphLegend className="graph-legend-card--overlay" algoLabel={algoLabel} />
+        <GraphLegend
+          className="graph-legend-card--overlay"
+          algoLabel={algoLabel}
+          showExplore={explorationOrder.length > 0}
+        />
 
         <div className="graph-zoom-toolbar" aria-label="Controles de zoom">
           <button type="button" className="graph-zoom-btn" title="Ampliar" aria-label="Ampliar" onClick={() => zoomBy(1.3)}>
@@ -1123,7 +1201,11 @@ export default function GrafoVis({
         <div className="graph-container" ref={containerRef} />
       </div>
 
-      <GraphLegend className="graph-legend-card--below" algoLabel={algoLabel} />
+      <GraphLegend
+        className="graph-legend-card--below"
+        algoLabel={algoLabel}
+        showExplore={explorationOrder.length > 0}
+      />
     </div>
   );
 }

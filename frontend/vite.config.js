@@ -38,4 +38,8 @@ export default defineConfig({
     staticDirPlugin("/data", path.resolve(__dirname, "../data")),
   ],
   server: { port: 5173 },
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.js"],
+  },
 });

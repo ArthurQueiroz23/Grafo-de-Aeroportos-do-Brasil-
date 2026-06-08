@@ -37,4 +37,7 @@ export const GRAPH = {
   inter: "rgba(61, 155, 143, 0.8)",
   labelStroke: "#080b10",
   text: "#eef1f5",
+  // Cor usada durante a animação de exploração do algoritmo
+  explore: "#6b99c8",
+  exploreGlow: "rgba(107, 153, 200, 0.45)",
 };

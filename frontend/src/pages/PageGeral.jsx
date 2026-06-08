@@ -6,7 +6,7 @@ import AppButton from "../components/ui/AppButton.jsx";
 import InsightGrid from "../components/ui/InsightGrid.jsx";
 import { SkeletonGraph, SkeletonKpiGrid } from "../components/ui/LoadingState.jsx";
 import { insightsRede } from "../lib/insights.js";
-import { parseCSV, buildGraph, dijkstra } from "../lib/graphUtils.js";
+import { parseCSV, buildGraph, dijkstra, computeGraphStats } from "../lib/graphUtils.js";
 
 const GESTALT_LEGEND = [
   { color: "var(--region-nordeste)", title: "Gestalt — Similaridade",   desc: "Cor do nó identifica a região geográfica" },
@@ -91,6 +91,8 @@ export default function PageGeral() {
     if (!graphData?.adjRows) return {};
     return buildGraph(graphData.adjRows);
   }, [graphData]);
+
+  const graphStats = useMemo(() => computeGraphStats(graph), [graph]);
 
   const airportList = useMemo(
     () => graphData?.airports.map((a) => a.id).sort() ?? [],
@@ -183,6 +185,22 @@ export default function PageGeral() {
               dens. {rankings?.maior_densidade_ego?.densidade_ego?.toFixed(2)}
             </div>
           </div>
+          {graphStats.nodes > 0 && (
+            <>
+              <div className="kpi-card">
+                <div className="kpi-label">Grau médio</div>
+                <div className="kpi-value">{graphStats.avgDegree.toFixed(1)}</div>
+                <div className="kpi-unit">conexões por aeroporto</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">Componentes</div>
+                <div className="kpi-value">{graphStats.components}</div>
+                <div className="kpi-unit">
+                  {graphStats.components === 1 ? "grafo conexo" : "subgrafos isolados"}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

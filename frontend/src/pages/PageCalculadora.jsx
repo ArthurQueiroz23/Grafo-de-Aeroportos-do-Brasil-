@@ -1,8 +1,20 @@
-import { useEffect, useState, useMemo } from "react";
-import { Route, ArrowRight, GitCompare, MapPin, Flag } from "lucide-react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import {
+  Route,
+  ArrowRight,
+  GitCompare,
+  MapPin,
+  Flag,
+  History,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Zap,
+} from "lucide-react";
 import GrafoVis from "../components/GrafoVis.jsx";
 import PageHeader from "../components/ui/PageHeader.jsx";
-import { dijkstra, bellmanFord, buildGraph } from "../lib/graphUtils.js";
+import { dijkstra, bellmanFord, bfs, dfs, buildGraph } from "../lib/graphUtils.js";
 
 function parseAdjCSV(text) {
   const lines = text.trim().split("\n").slice(1);
@@ -17,13 +29,101 @@ function parseAdjCSV(text) {
 }
 
 const ALGOS = [
-  { id: "dijkstra",    label: "Dijkstra" },
+  { id: "dijkstra",     label: "Dijkstra" },
   { id: "bellman-ford", label: "Bellman-Ford" },
-  { id: "comparar",    label: "Comparar" },
+  { id: "bfs",          label: "BFS" },
+  { id: "dfs",          label: "DFS" },
+  { id: "comparar",     label: "Comparar" },
 ];
 
-function PathDisplay({ path, color }) {
+const ALGO_NOTES = {
+  bfs: "BFS percorre por camadas, garantindo o menor número de escalas — mas não necessariamente o menor peso total.",
+  dfs: "DFS explora em profundidade antes de retroceder — encontra um caminho possível, não o mais curto.",
+};
+
+// ── Histórico de pesquisas (localStorage) ──────────────────────────────────────
+function useRouteHistory() {
+  const STORAGE_KEY = "grafo-route-history";
+
+  const [history, setHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  const push = useCallback((entry) => {
+    setHistory((prev) => {
+      const next = [{ ...entry, ts: Date.now() }, ...prev].slice(0, 12);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const clear = useCallback(() => {
+    setHistory([]);
+    localStorage.removeItem(STORAGE_KEY);
+  }, []);
+
+  return { history, push, clear };
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  }
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
+// ── Exportação ─────────────────────────────────────────────────────────────────
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportJSON({ origem, destino, algo, path, steps, cost }) {
+  const payload = {
+    origem,
+    destino,
+    algoritmo: algo,
+    caminho: path,
+    custo_total: parseFloat(cost.toFixed(2)),
+    saltos: path.length - 1,
+    intermediarios: Math.max(0, path.length - 2),
+    passos: steps.map((s, i) => ({
+      passo: i + 1,
+      de: s.from,
+      para: s.to,
+      peso_aresta: parseFloat(s.edgeWeight.toFixed(2)),
+      acumulado: parseFloat(s.accumulated.toFixed(2)),
+    })),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  triggerDownload(blob, `rota-${origem}-${destino}.json`);
+}
+
+function exportCSV({ origem, destino, steps }) {
+  const header = "passo,de,para,peso_aresta,acumulado\n";
+  const rows = steps
+    .map((s, i) => `${i + 1},${s.from},${s.to},${s.edgeWeight.toFixed(2)},${s.accumulated.toFixed(2)}`)
+    .join("\n");
+  const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+  triggerDownload(blob, `rota-${origem}-${destino}.csv`);
+}
+
+// ── Exibição passo a passo ────────────────────────────────────────────────────
+function PathDisplay({ path, steps, color, compact = false }) {
   if (!path || path.length === 0) return null;
+
   const hops = path.length - 1;
   const intermediaries = Math.max(0, path.length - 2);
 
@@ -75,6 +175,54 @@ function PathDisplay({ path, color }) {
           </span>
         ))}
       </div>
+
+      {!compact && steps && steps.length > 0 && (
+        <div className="path-steps">
+          <div className="path-steps__header">
+            <span className="path-steps__col path-steps__col--num">#</span>
+            <span className="path-steps__col path-steps__col--seg">Trecho</span>
+            <span className="path-steps__col path-steps__col--w">Peso</span>
+            <span className="path-steps__col path-steps__col--acc">Acumulado</span>
+          </div>
+          {steps.map((step, i) => (
+            <div
+              key={i}
+              className={[
+                "path-step",
+                i === 0 ? "path-step--first" : "",
+                i === steps.length - 1 ? "path-step--last" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <span className="path-step__num">{i + 1}</span>
+              <div className="path-step__segment">
+                <span
+                  className={
+                    i === 0
+                      ? "path-step__node path-step__node--origin"
+                      : "path-step__node"
+                  }
+                >
+                  {step.from}
+                </span>
+                <span className="path-step__arrow">→</span>
+                <span
+                  className={
+                    i === steps.length - 1
+                      ? "path-step__node path-step__node--dest"
+                      : "path-step__node"
+                  }
+                >
+                  {step.to}
+                </span>
+              </div>
+              <span className="path-step__weight">+{step.edgeWeight.toFixed(1)}</span>
+              <span className="path-step__acc">{step.accumulated.toFixed(1)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -96,14 +244,20 @@ function AlgoLabel({ label, color }) {
   );
 }
 
+// ── Componente principal ───────────────────────────────────────────────────────
 export default function PageCalculadora() {
-  const [adjRows, setAdjRows] = useState([]);
-  const [airports, setAirports] = useState([]);
-  const [origem, setOrigem] = useState("REC");
-  const [destino, setDestino] = useState("POA");
-  const [regionMap, setRegionMap] = useState({});
-  const [grauMap, setGrauMap] = useState({});
-  const [algo, setAlgo] = useState("dijkstra");
+  const [adjRows, setAdjRows]       = useState([]);
+  const [airports, setAirports]     = useState([]);
+  const [origem, setOrigem]         = useState("REC");
+  const [destino, setDestino]       = useState("POA");
+  const [regionMap, setRegionMap]   = useState({});
+  const [grauMap, setGrauMap]       = useState({});
+  const [algo, setAlgo]             = useState("dijkstra");
+  const [showHistory, setShowHistory]         = useState(false);
+  const [showExploration, setShowExploration] = useState(true);
+
+  const { history, push: pushHistory, clear: clearHistory } = useRouteHistory();
+  const lastSavedKeyRef = useRef(null);
 
   useEffect(() => {
     fetch("/data/adjacencias_aeroportos.csv")
@@ -134,9 +288,9 @@ export default function PageCalculadora() {
     });
   }, []);
 
-  const graph = useMemo(() => buildGraph(adjRows), [adjRows]);
+  const graph    = useMemo(() => buildGraph(adjRows), [adjRows]);
   const vertices = useMemo(() => Object.keys(graph).sort(), [graph]);
-  const edges = useMemo(
+  const edges    = useMemo(
     () =>
       adjRows.map((r) => ({
         from: r.origem,
@@ -146,48 +300,113 @@ export default function PageCalculadora() {
     [adjRows]
   );
 
-  const resultadoDijkstra = useMemo(() => {
-    if (!graph[origem] || !graph[destino] || origem === destino) return null;
-    return dijkstra(graph, origem, destino);
-  }, [graph, origem, destino]);
+  const guard = useMemo(
+    () => !graph[origem] || !graph[destino] || origem === destino,
+    [graph, origem, destino]
+  );
 
-  const resultadoBF = useMemo(() => {
-    if (!graph[origem] || !graph[destino] || origem === destino) return null;
-    return bellmanFord(graph, origem, destino);
-  }, [graph, origem, destino]);
+  const resultadoDijkstra = useMemo(
+    () => (guard ? null : dijkstra(graph, origem, destino)),
+    [guard, graph, origem, destino]
+  );
+  const resultadoBF = useMemo(
+    () => (guard ? null : bellmanFord(graph, origem, destino)),
+    [guard, graph, origem, destino]
+  );
+  const resultadoBFS = useMemo(
+    () => (guard ? null : bfs(graph, origem, destino)),
+    [guard, graph, origem, destino]
+  );
+  const resultadoDFS = useMemo(
+    () => (guard ? null : dfs(graph, origem, destino)),
+    [guard, graph, origem, destino]
+  );
 
-  const resultado = algo === "bellman-ford" ? resultadoBF : resultadoDijkstra;
+  const resultado = useMemo(() => {
+    if (algo === "bellman-ford") return resultadoBF;
+    if (algo === "bfs")          return resultadoBFS;
+    if (algo === "dfs")          return resultadoDFS;
+    return resultadoDijkstra;
+  }, [algo, resultadoDijkstra, resultadoBF, resultadoBFS, resultadoDFS]);
 
-  // O grafo sempre destaca a rota do algoritmo selecionado.
-  // No modo "comparar", mostra a rota Dijkstra por padrão.
   const highlightPath = useMemo(() => {
     if (algo === "bellman-ford") return resultadoBF?.path ?? [];
+    if (algo === "bfs")          return resultadoBFS?.path ?? [];
+    if (algo === "dfs")          return resultadoDFS?.path ?? [];
     return resultadoDijkstra?.path ?? [];
-  }, [algo, resultadoDijkstra, resultadoBF]);
+  }, [algo, resultadoDijkstra, resultadoBF, resultadoBFS, resultadoDFS]);
 
   const algoLabel = useMemo(() => {
-    if (algo === "bellman-ford") return "Bellman-Ford";
-    if (algo === "comparar") return "Dijkstra";
-    return "Dijkstra";
+    const map = { "bellman-ford": "Bellman-Ford", bfs: "BFS", dfs: "DFS" };
+    return map[algo] ?? "Dijkstra";
   }, [algo]);
 
-  const igual = origem === destino;
-  const semCaminho = !igual && resultado && resultado.path.length === 0;
-  const temCaminho = !igual && resultado && resultado.path.length > 0;
-  const temComparacao =
-    algo === "comparar" &&
-    resultadoDijkstra?.path.length > 0 &&
-    resultadoBF?.path.length > 0;
-  const custosIguais =
-    temComparacao &&
-    Math.abs(resultadoDijkstra.cost - resultadoBF.cost) < 1e-9;
+  const explorationOrder = useMemo(() => {
+    if (!showExploration || algo === "comparar") return [];
+    return resultado?.visitedOrder ?? [];
+  }, [resultado, showExploration, algo]);
+
+  const igual      = origem === destino;
+  const semCaminho = !igual && algo !== "comparar" && resultado?.path.length === 0;
+  const temCaminho = !igual && algo !== "comparar" && resultado?.path.length > 0;
+
+  // Modo comparação — checa se cada algoritmo encontrou caminho
+  const compResults = useMemo(() => [
+    { id: "dijkstra",     label: "Dijkstra",      color: "var(--color-primary)", result: resultadoDijkstra },
+    { id: "bellman-ford", label: "Bellman-Ford",   color: "var(--color-accent)",  result: resultadoBF      },
+    { id: "bfs",          label: "BFS",            color: "var(--region-norte)",  result: resultadoBFS     },
+    { id: "dfs",          label: "DFS",            color: "var(--region-sul)",    result: resultadoDFS     },
+  ], [resultadoDijkstra, resultadoBF, resultadoBFS, resultadoDFS]);
+
+  const temComparacao = algo === "comparar" && !igual;
+
+  // Insight sobre qual algoritmo foi mais eficiente
+  const compInsight = useMemo(() => {
+    if (!temComparacao) return null;
+    const withPaths = compResults.filter((c) => c.result?.path.length > 0);
+    if (withPaths.length === 0) return null;
+
+    const minCost = Math.min(...withPaths.map((c) => c.result.cost));
+    const minHops = Math.min(...withPaths.map((c) => c.result.path.length - 1));
+    const cheapest = withPaths.filter((c) => Math.abs(c.result.cost - minCost) < 1e-9).map((c) => c.label);
+    const fewest   = withPaths.filter((c) => c.result.path.length - 1 === minHops).map((c) => c.label);
+
+    return { minCost, minHops, cheapest, fewest };
+  }, [temComparacao, compResults]);
+
+  // Salva no histórico quando o resultado muda
+  useEffect(() => {
+    if (algo === "comparar" || !resultado?.path?.length) return;
+    const key = `${origem}|${destino}|${algo}`;
+    if (lastSavedKeyRef.current === key) return;
+    lastSavedKeyRef.current = key;
+    pushHistory({
+      origem,
+      destino,
+      algo: algoLabel,
+      path: resultado.path,
+      cost: resultado.cost,
+      hops: resultado.path.length - 1,
+    });
+  }, [resultado, algo, origem, destino, algoLabel, pushHistory]);
+
+  const handleHistoryClick = useCallback(
+    (item) => {
+      const algoId = { Dijkstra: "dijkstra", "Bellman-Ford": "bellman-ford", BFS: "bfs", DFS: "dfs" };
+      setOrigem(item.origem);
+      setDestino(item.destino);
+      setAlgo(algoId[item.algo] ?? "dijkstra");
+      setShowHistory(false);
+    },
+    []
+  );
 
   return (
     <>
       <PageHeader
         eyebrow="Algoritmos em grafos"
         title="Calculadora de Rotas"
-        subtitle="Calcula o menor caminho entre aeroportos usando Dijkstra ou Bellman-Ford, exibindo a rota completa com todos os nós intermediários e número de saltos."
+        subtitle="Calcula o menor caminho entre aeroportos usando Dijkstra, Bellman-Ford, BFS ou DFS — exibindo cada passo da rota com custo acumulado."
       />
 
       <section className="section">
@@ -196,6 +415,7 @@ export default function PageCalculadora() {
           Selecionar rota
         </h2>
 
+        {/* Seletor de algoritmo */}
         <div
           className="tabs"
           role="tablist"
@@ -212,22 +432,22 @@ export default function PageCalculadora() {
               onClick={() => setAlgo(a.id)}
             >
               {a.id === "comparar" && (
-                <GitCompare
-                  size={12}
-                  style={{ marginRight: 4 }}
-                  aria-hidden="true"
-                />
+                <GitCompare size={12} style={{ marginRight: 4 }} aria-hidden="true" />
               )}
               {a.label}
             </button>
           ))}
         </div>
 
+        {/* Nota explicativa para BFS e DFS */}
+        {ALGO_NOTES[algo] && (
+          <div className="algo-note">{ALGO_NOTES[algo]}</div>
+        )}
+
+        {/* Seletores de origem e destino */}
         <div className="form-row">
           <div className="form-field">
-            <label className="form-label" htmlFor="calc-origem">
-              Origem
-            </label>
+            <label className="form-label" htmlFor="calc-origem">Origem</label>
             <select
               id="calc-origem"
               className="ctrl-input ctrl-select"
@@ -236,9 +456,7 @@ export default function PageCalculadora() {
               onChange={(e) => setOrigem(e.target.value)}
             >
               {vertices.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
+                <option key={v} value={v}>{v}</option>
               ))}
             </select>
           </div>
@@ -256,9 +474,7 @@ export default function PageCalculadora() {
           </div>
 
           <div className="form-field">
-            <label className="form-label" htmlFor="calc-destino">
-              Destino
-            </label>
+            <label className="form-label" htmlFor="calc-destino">Destino</label>
             <select
               id="calc-destino"
               className="ctrl-input ctrl-select"
@@ -267,37 +483,26 @@ export default function PageCalculadora() {
               onChange={(e) => setDestino(e.target.value)}
             >
               {vertices.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
+                <option key={v} value={v}>{v}</option>
               ))}
             </select>
           </div>
         </div>
 
+        {/* Alertas */}
         {igual && (
-          <div
-            className="alert alert--warning"
-            role="alert"
-            style={{ marginTop: "var(--space-4)" }}
-          >
+          <div className="alert alert--warning" role="alert" style={{ marginTop: "var(--space-4)" }}>
             Origem e destino são iguais. Selecione aeroportos diferentes.
           </div>
         )}
-
         {semCaminho && (
-          <div
-            className="alert alert--error"
-            role="alert"
-            style={{ marginTop: "var(--space-4)" }}
-          >
-            Não existe caminho entre <strong>{origem}</strong> e{" "}
-            <strong>{destino}</strong> na malha atual.
+          <div className="alert alert--error" role="alert" style={{ marginTop: "var(--space-4)" }}>
+            Não existe caminho entre <strong>{origem}</strong> e <strong>{destino}</strong> na malha atual.
           </div>
         )}
 
-        {/* Resultado — algoritmo único */}
-        {temCaminho && algo !== "comparar" && (
+        {/* ── Resultado — algoritmo único ── */}
+        {temCaminho && (
           <>
             <div className="kpi-grid" style={{ marginTop: "var(--space-6)" }}>
               <div className="kpi-card">
@@ -312,110 +517,198 @@ export default function PageCalculadora() {
               </div>
               <div className="kpi-card">
                 <div className="kpi-label">Intermediários</div>
-                <div className="kpi-value">
-                  {Math.max(0, resultado.path.length - 2)}
-                </div>
+                <div className="kpi-value">{Math.max(0, resultado.path.length - 2)}</div>
                 <div className="kpi-unit">nós de passagem</div>
               </div>
             </div>
-            <PathDisplay path={resultado.path} />
+
+            <PathDisplay path={resultado.path} steps={resultado.steps} />
+
+            {/* Exportação */}
+            <div className="export-row">
+              <span className="export-label">Exportar</span>
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={() =>
+                  exportJSON({
+                    origem,
+                    destino,
+                    algo: algoLabel,
+                    path: resultado.path,
+                    steps: resultado.steps,
+                    cost: resultado.cost,
+                  })
+                }
+              >
+                <Download size={13} aria-hidden="true" />
+                JSON
+              </button>
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={() => exportCSV({ origem, destino, steps: resultado.steps })}
+              >
+                <Download size={13} aria-hidden="true" />
+                CSV
+              </button>
+            </div>
           </>
         )}
 
-        {/* Resultado — modo comparação */}
+        {/* ── Resultado — modo comparação ── */}
         {temComparacao && (
           <>
-            <div
-              className="two-col"
-              style={{ marginTop: "var(--space-6)" }}
-            >
-              <div>
-                <AlgoLabel label="Dijkstra" color="var(--color-primary)" />
-                <div className="kpi-grid">
-                  <div className="kpi-card">
-                    <div className="kpi-label">Custo total</div>
-                    <div className="kpi-value">
-                      {resultadoDijkstra.cost.toFixed(1)}
-                    </div>
-                    <div className="kpi-unit">peso acumulado</div>
+            <div className="algo-compare-grid" style={{ marginTop: "var(--space-6)" }}>
+              {compResults.map(({ id, label, color, result }) => (
+                <div key={id} className="algo-compare-card">
+                  <div className="algo-compare-card__header" style={{ borderLeftColor: color }}>
+                    <span className="algo-compare-card__label" style={{ color }}>
+                      {label}
+                    </span>
+                    {result?.path.length > 0 ? (
+                      <>
+                        <span className="algo-compare-card__cost">
+                          {result.cost.toFixed(1)}
+                        </span>
+                        <span className="algo-compare-card__hops">
+                          {result.path.length - 1} salto{result.path.length - 1 !== 1 ? "s" : ""}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="algo-compare-card__no-path">sem caminho</span>
+                    )}
                   </div>
-                  <div className="kpi-card">
-                    <div className="kpi-label">Saltos</div>
-                    <div className="kpi-value">
-                      {resultadoDijkstra.path.length - 1}
-                    </div>
-                    <div className="kpi-unit">arestas</div>
-                  </div>
+                  {result?.path.length > 0 && (
+                    <PathDisplay
+                      path={result.path}
+                      steps={result.steps}
+                      color={color}
+                      compact
+                    />
+                  )}
                 </div>
-                <PathDisplay path={resultadoDijkstra.path} />
-              </div>
-
-              <div>
-                <AlgoLabel
-                  label="Bellman-Ford"
-                  color="var(--color-accent)"
-                />
-                <div className="kpi-grid">
-                  <div className="kpi-card">
-                    <div className="kpi-label">Custo total</div>
-                    <div className="kpi-value">
-                      {resultadoBF.cost.toFixed(1)}
-                    </div>
-                    <div className="kpi-unit">peso acumulado</div>
-                  </div>
-                  <div className="kpi-card">
-                    <div className="kpi-label">Saltos</div>
-                    <div className="kpi-value">
-                      {resultadoBF.path.length - 1}
-                    </div>
-                    <div className="kpi-unit">arestas</div>
-                  </div>
-                </div>
-                <PathDisplay
-                  path={resultadoBF.path}
-                  color="var(--color-accent)"
-                />
-              </div>
+              ))}
             </div>
 
-            <div className="insight-box">
-              Dijkstra e Bellman-Ford produziram{" "}
-              <strong
-                style={{
-                  color: custosIguais
-                    ? "var(--color-success)"
-                    : "var(--color-danger)",
-                }}
-              >
-                {custosIguais ? "resultados idênticos" : "resultados diferentes"}
-              </strong>{" "}
-              — custo{" "}
-              <strong style={{ color: "var(--color-primary)" }}>
-                {resultadoDijkstra.cost.toFixed(1)}
-              </strong>{" "}
-              em <strong>{resultadoDijkstra.path.length - 1}</strong> saltos. Em
-              grafos sem pesos negativos, ambos garantem o caminho mínimo; o grafo
-              abaixo destaca a rota{" "}
-              <span style={{ color: "var(--color-primary)" }}>Dijkstra</span>.
-            </div>
+            {compInsight && (
+              <div className="insight-box" style={{ marginTop: "var(--space-5)" }}>
+                Menor custo:{" "}
+                <strong style={{ color: "var(--color-primary)" }}>
+                  {compInsight.minCost.toFixed(1)}
+                </strong>{" "}
+                via <strong>{compInsight.cheapest.join(" e ")}</strong>.
+                {compInsight.cheapest.join(",") !== compInsight.fewest.join(",") && (
+                  <>
+                    {" "}Menor número de escalas:{" "}
+                    <strong>{compInsight.minHops}</strong>{" "}
+                    salto{compInsight.minHops !== 1 ? "s" : ""}{" "}
+                    via <strong>{compInsight.fewest.join(" e ")}</strong>.
+                  </>
+                )}
+                {compInsight.cheapest.includes("Dijkstra") &&
+                  compInsight.cheapest.includes("Bellman-Ford") && (
+                    <>{" "}Dijkstra e Bellman-Ford convergem para o mesmo custo mínimo em grafos sem pesos negativos.</>
+                  )}
+              </div>
+            )}
           </>
         )}
       </section>
 
+      {/* ── Histórico de pesquisas ── */}
+      {history.length > 0 && (
+        <div className="route-history">
+          <button
+            type="button"
+            className="route-history__header"
+            onClick={() => setShowHistory((v) => !v)}
+            aria-expanded={showHistory}
+          >
+            <span className="route-history__title">
+              <History size={14} aria-hidden="true" />
+              Pesquisas recentes
+              <span className="route-history__count">{history.length}</span>
+            </span>
+            {showHistory ? (
+              <ChevronUp size={14} aria-hidden="true" />
+            ) : (
+              <ChevronDown size={14} aria-hidden="true" />
+            )}
+          </button>
+
+          {showHistory && (
+            <div className="route-history__list">
+              {history.map((item, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="route-history__item"
+                  onClick={() => handleHistoryClick(item)}
+                  title="Restaurar essa pesquisa"
+                >
+                  <span className="route-history__pair">
+                    {item.origem} → {item.destino}
+                  </span>
+                  <span className="route-history__algo">{item.algo}</span>
+                  <span className="route-history__cost">
+                    custo {item.cost.toFixed(1)} · {item.hops} salto{item.hops !== 1 ? "s" : ""}
+                  </span>
+                  <span className="route-history__time">{formatTime(item.ts)}</span>
+                </button>
+              ))}
+              <div className="route-history__footer">
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={clearHistory}
+                >
+                  <RotateCcw size={12} aria-hidden="true" />
+                  Limpar histórico
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Grafo interativo ── */}
       {airports.length > 0 && edges.length > 0 && (
         <section className="section">
           <h2 className="section-title">
             Grafo interativo
-            {(temCaminho || temComparacao) && (
+            {highlightPath.length > 1 && (
               <span className="section-title-hint">
-                — âmbar = origem · verde = destino · branco = intermediário
+                — âmbar = origem · verde = destino · branco = intermediário · azul = explorado
               </span>
             )}
           </h2>
+
+          {/* Toggle de animação de busca */}
+          {algo !== "comparar" && (
+            <div className="exploration-toggle">
+              <button
+                type="button"
+                className={`exploration-toggle__btn${showExploration ? " exploration-toggle__btn--on" : ""}`}
+                onClick={() => setShowExploration((v) => !v)}
+                aria-pressed={showExploration}
+              >
+                <Zap size={13} aria-hidden="true" />
+                {showExploration ? "Animação de busca ativa" : "Animação de busca desativada"}
+              </button>
+              {showExploration && resultado?.visitedOrder?.length > 0 && (
+                <span className="exploration-toggle__stat">
+                  {resultado.visitedOrder.length} nó{resultado.visitedOrder.length !== 1 ? "s" : ""} explorado{resultado.visitedOrder.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          )}
+
           <GrafoVis
             airports={airports}
             edges={edges}
             highlightPath={highlightPath}
+            explorationOrder={explorationOrder}
             regionMap={regionMap}
             grauMap={grauMap}
             algoLabel={algoLabel}
