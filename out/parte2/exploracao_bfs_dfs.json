@@ -1,4 +1,11 @@
 {
+  "_meta": {
+    "gerado_em": "2026-06-04T21:36:11-03:00",
+    "versao_schema": "1.0",
+    "gerador": "Grafo de Aeroportos do Brasil — src.cli",
+    "parte": "parte2",
+    "descricao": "Exploração do subgrafo: resumo de camadas do BFS, amostra da ordem do DFS e as árvores BFS/DFS (nó a nó) de uma amostra conexa."
+  },
   "bfs": [
     {
       "fonte": 0,
@@ -172,5 +179,605 @@
         8
       ]
     }
-  ]
+  ],
+  "arvore_bfs": {
+    "fonte": 0,
+    "n_nos": 48,
+    "n_arestas_arvore": 47,
+    "profundidade_maxima": 6,
+    "nos": [
+      {
+        "id": 0,
+        "pai": null,
+        "profundidade": 0,
+        "ordem": 0
+      },
+      {
+        "id": 1,
+        "pai": 0,
+        "profundidade": 1,
+        "ordem": 1
+      },
+      {
+        "id": 2,
+        "pai": 0,
+        "profundidade": 1,
+        "ordem": 2
+      },
+      {
+        "id": 469,
+        "pai": 0,
+        "profundidade": 1,
+        "ordem": 3
+      },
+      {
+        "id": 6,
+        "pai": 1,
+        "profundidade": 2,
+        "ordem": 4
+      },
+      {
+        "id": 385,
+        "pai": 1,
+        "profundidade": 2,
+        "ordem": 5
+      },
+      {
+        "id": 3,
+        "pai": 2,
+        "profundidade": 2,
+        "ordem": 6
+      },
+      {
+        "id": 380,
+        "pai": 469,
+        "profundidade": 2,
+        "ordem": 7
+      },
+      {
+        "id": 37415,
+        "pai": 469,
+        "profundidade": 2,
+        "ordem": 8
+      },
+      {
+        "id": 5,
+        "pai": 6,
+        "profundidade": 3,
+        "ordem": 9
+      },
+      {
+        "id": 384,
+        "pai": 385,
+        "profundidade": 3,
+        "ordem": 10
+      },
+      {
+        "id": 386,
+        "pai": 385,
+        "profundidade": 3,
+        "ordem": 11
+      },
+      {
+        "id": 4,
+        "pai": 3,
+        "profundidade": 3,
+        "ordem": 12
+      },
+      {
+        "id": 419,
+        "pai": 3,
+        "profundidade": 3,
+        "ordem": 13
+      },
+      {
+        "id": 422,
+        "pai": 3,
+        "profundidade": 3,
+        "ordem": 14
+      },
+      {
+        "id": 183,
+        "pai": 380,
+        "profundidade": 3,
+        "ordem": 15
+      },
+      {
+        "id": 379,
+        "pai": 380,
+        "profundidade": 3,
+        "ordem": 16
+      },
+      {
+        "id": 98,
+        "pai": 5,
+        "profundidade": 4,
+        "ordem": 17
+      },
+      {
+        "id": 383,
+        "pai": 384,
+        "profundidade": 4,
+        "ordem": 18
+      },
+      {
+        "id": 468,
+        "pai": 384,
+        "profundidade": 4,
+        "ordem": 19
+      },
+      {
+        "id": 331,
+        "pai": 386,
+        "profundidade": 4,
+        "ordem": 20
+      },
+      {
+        "id": 387,
+        "pai": 386,
+        "profundidade": 4,
+        "ordem": 21
+      },
+      {
+        "id": 36967,
+        "pai": 386,
+        "profundidade": 4,
+        "ordem": 22
+      },
+      {
+        "id": 420,
+        "pai": 4,
+        "profundidade": 4,
+        "ordem": 23
+      },
+      {
+        "id": 35698,
+        "pai": 419,
+        "profundidade": 4,
+        "ordem": 24
+      },
+      {
+        "id": 423,
+        "pai": 422,
+        "profundidade": 4,
+        "ordem": 25
+      },
+      {
+        "id": 180,
+        "pai": 183,
+        "profundidade": 4,
+        "ordem": 26
+      },
+      {
+        "id": 182,
+        "pai": 183,
+        "profundidade": 4,
+        "ordem": 27
+      },
+      {
+        "id": 435,
+        "pai": 379,
+        "profundidade": 4,
+        "ordem": 28
+      },
+      {
+        "id": 470,
+        "pai": 98,
+        "profundidade": 5,
+        "ordem": 29
+      },
+      {
+        "id": 35729,
+        "pai": 98,
+        "profundidade": 5,
+        "ordem": 30
+      },
+      {
+        "id": 125,
+        "pai": 383,
+        "profundidade": 5,
+        "ordem": 31
+      },
+      {
+        "id": 381,
+        "pai": 383,
+        "profundidade": 5,
+        "ordem": 32
+      },
+      {
+        "id": 37498,
+        "pai": 383,
+        "profundidade": 5,
+        "ordem": 33
+      },
+      {
+        "id": 442,
+        "pai": 468,
+        "profundidade": 5,
+        "ordem": 34
+      },
+      {
+        "id": 332,
+        "pai": 331,
+        "profundidade": 5,
+        "ordem": 35
+      },
+      {
+        "id": 333,
+        "pai": 331,
+        "profundidade": 5,
+        "ordem": 36
+      },
+      {
+        "id": 139,
+        "pai": 387,
+        "profundidade": 5,
+        "ordem": 37
+      },
+      {
+        "id": 388,
+        "pai": 387,
+        "profundidade": 5,
+        "ordem": 38
+      },
+      {
+        "id": 35709,
+        "pai": 420,
+        "profundidade": 5,
+        "ordem": 39
+      },
+      {
+        "id": 35405,
+        "pai": 35698,
+        "profundidade": 5,
+        "ordem": 40
+      },
+      {
+        "id": 179,
+        "pai": 180,
+        "profundidade": 5,
+        "ordem": 41
+      },
+      {
+        "id": 434,
+        "pai": 180,
+        "profundidade": 5,
+        "ordem": 42
+      },
+      {
+        "id": 181,
+        "pai": 182,
+        "profundidade": 5,
+        "ordem": 43
+      },
+      {
+        "id": 35699,
+        "pai": 182,
+        "profundidade": 5,
+        "ordem": 44
+      },
+      {
+        "id": 461,
+        "pai": 435,
+        "profundidade": 5,
+        "ordem": 45
+      },
+      {
+        "id": 410,
+        "pai": 470,
+        "profundidade": 6,
+        "ordem": 46
+      },
+      {
+        "id": 471,
+        "pai": 470,
+        "profundidade": 6,
+        "ordem": 47
+      }
+    ],
+    "subgrafo": {
+      "ordem": 48,
+      "arestas_dirigidas": 120
+    }
+  },
+  "arvore_dfs": {
+    "fonte": 0,
+    "n_nos": 48,
+    "n_arestas_arvore": 47,
+    "profundidade_maxima": 19,
+    "nos": [
+      {
+        "id": 0,
+        "pai": null,
+        "profundidade": 0,
+        "ordem": 0
+      },
+      {
+        "id": 1,
+        "pai": 0,
+        "profundidade": 1,
+        "ordem": 1
+      },
+      {
+        "id": 6,
+        "pai": 1,
+        "profundidade": 2,
+        "ordem": 2
+      },
+      {
+        "id": 5,
+        "pai": 6,
+        "profundidade": 3,
+        "ordem": 3
+      },
+      {
+        "id": 4,
+        "pai": 5,
+        "profundidade": 4,
+        "ordem": 4
+      },
+      {
+        "id": 3,
+        "pai": 4,
+        "profundidade": 5,
+        "ordem": 5
+      },
+      {
+        "id": 2,
+        "pai": 3,
+        "profundidade": 6,
+        "ordem": 6
+      },
+      {
+        "id": 419,
+        "pai": 3,
+        "profundidade": 6,
+        "ordem": 7
+      },
+      {
+        "id": 420,
+        "pai": 419,
+        "profundidade": 7,
+        "ordem": 8
+      },
+      {
+        "id": 35709,
+        "pai": 420,
+        "profundidade": 8,
+        "ordem": 9
+      },
+      {
+        "id": 35698,
+        "pai": 35709,
+        "profundidade": 9,
+        "ordem": 10
+      },
+      {
+        "id": 423,
+        "pai": 35698,
+        "profundidade": 10,
+        "ordem": 11
+      },
+      {
+        "id": 182,
+        "pai": 423,
+        "profundidade": 11,
+        "ordem": 12
+      },
+      {
+        "id": 181,
+        "pai": 182,
+        "profundidade": 12,
+        "ordem": 13
+      },
+      {
+        "id": 179,
+        "pai": 181,
+        "profundidade": 13,
+        "ordem": 14
+      },
+      {
+        "id": 180,
+        "pai": 179,
+        "profundidade": 14,
+        "ordem": 15
+      },
+      {
+        "id": 183,
+        "pai": 180,
+        "profundidade": 15,
+        "ordem": 16
+      },
+      {
+        "id": 380,
+        "pai": 183,
+        "profundidade": 16,
+        "ordem": 17
+      },
+      {
+        "id": 379,
+        "pai": 380,
+        "profundidade": 17,
+        "ordem": 18
+      },
+      {
+        "id": 435,
+        "pai": 379,
+        "profundidade": 18,
+        "ordem": 19
+      },
+      {
+        "id": 434,
+        "pai": 435,
+        "profundidade": 19,
+        "ordem": 20
+      },
+      {
+        "id": 461,
+        "pai": 435,
+        "profundidade": 19,
+        "ordem": 21
+      },
+      {
+        "id": 469,
+        "pai": 380,
+        "profundidade": 17,
+        "ordem": 22
+      },
+      {
+        "id": 37415,
+        "pai": 469,
+        "profundidade": 18,
+        "ordem": 23
+      },
+      {
+        "id": 422,
+        "pai": 37415,
+        "profundidade": 19,
+        "ordem": 24
+      },
+      {
+        "id": 35699,
+        "pai": 182,
+        "profundidade": 12,
+        "ordem": 25
+      },
+      {
+        "id": 35405,
+        "pai": 35698,
+        "profundidade": 10,
+        "ordem": 26
+      },
+      {
+        "id": 98,
+        "pai": 4,
+        "profundidade": 5,
+        "ordem": 27
+      },
+      {
+        "id": 470,
+        "pai": 98,
+        "profundidade": 6,
+        "ordem": 28
+      },
+      {
+        "id": 410,
+        "pai": 470,
+        "profundidade": 7,
+        "ordem": 29
+      },
+      {
+        "id": 471,
+        "pai": 470,
+        "profundidade": 7,
+        "ordem": 30
+      },
+      {
+        "id": 35729,
+        "pai": 98,
+        "profundidade": 6,
+        "ordem": 31
+      },
+      {
+        "id": 385,
+        "pai": 1,
+        "profundidade": 2,
+        "ordem": 32
+      },
+      {
+        "id": 384,
+        "pai": 385,
+        "profundidade": 3,
+        "ordem": 33
+      },
+      {
+        "id": 383,
+        "pai": 384,
+        "profundidade": 4,
+        "ordem": 34
+      },
+      {
+        "id": 125,
+        "pai": 383,
+        "profundidade": 5,
+        "ordem": 35
+      },
+      {
+        "id": 381,
+        "pai": 383,
+        "profundidade": 5,
+        "ordem": 36
+      },
+      {
+        "id": 37498,
+        "pai": 383,
+        "profundidade": 5,
+        "ordem": 37
+      },
+      {
+        "id": 468,
+        "pai": 37498,
+        "profundidade": 6,
+        "ordem": 38
+      },
+      {
+        "id": 442,
+        "pai": 468,
+        "profundidade": 7,
+        "ordem": 39
+      },
+      {
+        "id": 386,
+        "pai": 385,
+        "profundidade": 3,
+        "ordem": 40
+      },
+      {
+        "id": 331,
+        "pai": 386,
+        "profundidade": 4,
+        "ordem": 41
+      },
+      {
+        "id": 332,
+        "pai": 331,
+        "profundidade": 5,
+        "ordem": 42
+      },
+      {
+        "id": 333,
+        "pai": 332,
+        "profundidade": 6,
+        "ordem": 43
+      },
+      {
+        "id": 387,
+        "pai": 386,
+        "profundidade": 4,
+        "ordem": 44
+      },
+      {
+        "id": 139,
+        "pai": 387,
+        "profundidade": 5,
+        "ordem": 45
+      },
+      {
+        "id": 388,
+        "pai": 387,
+        "profundidade": 5,
+        "ordem": 46
+      },
+      {
+        "id": 36967,
+        "pai": 386,
+        "profundidade": 4,
+        "ordem": 47
+      }
+    ],
+    "subgrafo": {
+      "ordem": 48,
+      "arestas_dirigidas": 120
+    }
+  }
 }

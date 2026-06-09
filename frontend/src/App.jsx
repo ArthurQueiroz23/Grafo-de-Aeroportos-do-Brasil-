@@ -6,6 +6,10 @@ import {
   ArrowLeftRight,
   Image,
   Microscope,
+  Network,
+  Share2,
+  Timer,
+  Gauge,
   Menu,
   X,
   PlaneTakeoff,
@@ -19,22 +23,46 @@ import PageParte2 from "./pages/PageParte2.jsx";
 import EmptyState from "./components/ui/EmptyState.jsx";
 import { AppBackground } from "./components/ui/background-paths.jsx";
 
-const PAGES = [
-  { id: "geral", label: "Visão Geral", Icon: Globe },
-  { id: "metricas", label: "Métricas", Icon: BarChart2 },
-  { id: "calculadora", label: "Calculadora de Rotas", Icon: Plane },
-  { id: "rotas", label: "Rotas", Icon: ArrowLeftRight },
-  { id: "visualizacoes", label: "Visualizações", Icon: Image },
-  { id: "parte2", label: "Parte 2 — SNAP", Icon: Microscope },
+// Navegação agrupada por parte do trabalho — cada grupo tem seus próprios subtópicos,
+// mantendo o mesmo padrão visual entre a Parte 1 e a Parte 2.
+const NAV_GROUPS = [
+  {
+    id: "parte1",
+    label: "Parte 1 — Aeroportos do Brasil",
+    items: [
+      { id: "geral", label: "Visão Geral", Icon: Globe },
+      { id: "metricas", label: "Métricas", Icon: BarChart2 },
+      { id: "calculadora", label: "Calculadora de Rotas", Icon: Plane },
+      { id: "rotas", label: "Rotas", Icon: ArrowLeftRight },
+      { id: "visualizacoes", label: "Visualizações", Icon: Image },
+    ],
+  },
+  {
+    id: "parte2",
+    label: "Parte 2 — SNAP RoadNet-CA",
+    items: [
+      { id: "parte2-geral", label: "Visão Geral", Icon: Microscope },
+      { id: "parte2-grafo", label: "Grafo Interativo", Icon: Network },
+      { id: "parte2-exploracao", label: "Exploração BFS/DFS", Icon: Share2 },
+      { id: "parte2-benchmark", label: "Benchmarking", Icon: Timer },
+      { id: "parte2-visualizacoes", label: "Visualizações", Icon: Gauge },
+    ],
+  },
 ];
 
+const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+
 const PAGE_MAP = {
-  geral: PageGeral,
-  metricas: PageMetricas,
-  calculadora: PageCalculadora,
-  rotas: PageRotas,
-  visualizacoes: PageVisualizacoes,
-  parte2: PageParte2,
+  geral: () => <PageGeral />,
+  metricas: () => <PageMetricas />,
+  calculadora: () => <PageCalculadora />,
+  rotas: () => <PageRotas />,
+  visualizacoes: () => <PageVisualizacoes />,
+  "parte2-geral": () => <PageParte2 section="geral" />,
+  "parte2-grafo": () => <PageParte2 section="grafo" />,
+  "parte2-exploracao": () => <PageParte2 section="exploracao" />,
+  "parte2-benchmark": () => <PageParte2 section="benchmark" />,
+  "parte2-visualizacoes": () => <PageParte2 section="visualizacoes" />,
 };
 
 export default function App() {
@@ -56,8 +84,8 @@ export default function App() {
     return () => mq.removeEventListener("change", close);
   }, [menuOpen]);
 
-  const ActivePage = PAGE_MAP[page];
-  const current = PAGES.find((p) => p.id === page);
+  const renderPage = PAGE_MAP[page];
+  const current = ALL_ITEMS.find((p) => p.id === page);
 
   return (
     <div className="layout">
@@ -87,19 +115,24 @@ export default function App() {
         </div>
 
         <nav className="sidebar-nav" aria-label="Navegação principal">
-          {PAGES.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={`nav-item${page === p.id ? " active" : ""}`}
-              onClick={() => navigate(p.id)}
-              aria-current={page === p.id ? "page" : undefined}
-            >
-              <span className="nav-icon" aria-hidden="true">
-                <p.Icon size={16} strokeWidth={1.75} />
-              </span>
-              <span>{p.label}</span>
-            </button>
+          {NAV_GROUPS.map((group) => (
+            <div key={group.id} className="nav-group">
+              <div className="nav-group-label">{group.label}</div>
+              {group.items.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`nav-item${page === p.id ? " active" : ""}`}
+                  onClick={() => navigate(p.id)}
+                  aria-current={page === p.id ? "page" : undefined}
+                >
+                  <span className="nav-icon" aria-hidden="true">
+                    <p.Icon size={16} strokeWidth={1.75} />
+                  </span>
+                  <span>{p.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
 
@@ -123,8 +156,8 @@ export default function App() {
 
         <main className="main-content">
           <div key={page} className="page-content">
-            {ActivePage ? (
-              <ActivePage />
+            {renderPage ? (
+              renderPage()
             ) : (
               <EmptyState
                 icon={Globe}

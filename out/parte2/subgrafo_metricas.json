@@ -1,5 +1,12 @@
 {
-  "arquivo": "C:\\Users\\Administrador\\faculdade\\Grafo-de-Aeroportos-do-Brasil-\\data\\dataset_parte2\\roadNet-CA.txt.gz",
+  "_meta": {
+    "gerado_em": "2026-06-04T21:36:10-03:00",
+    "versao_schema": "1.0",
+    "gerador": "Grafo de Aeroportos do Brasil — src.cli",
+    "parte": "parte2",
+    "descricao": "Métricas do subgrafo dirigido extraído do SNAP roadNet-CA (amostra da maior componente conexa)."
+  },
+  "arquivo": "roadNet-CA.txt.gz",
   "linhas_lidas_amostra": 600000,
   "wcc_tamanho_amostra": 83933,
   "max_vertices": 3000,
@@ -8,5 +15,5 @@
   "peso_modo": "synthetic_km",
   "ordem": 3000,
   "tamanho_arestas_dirigidas": 8034,
-  "densidade_dirigida": 0.0008929643214404801
+  "densidade_dirigida": 0.000893
 }

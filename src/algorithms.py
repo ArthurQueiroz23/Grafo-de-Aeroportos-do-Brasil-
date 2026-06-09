@@ -110,6 +110,78 @@ def dfs_order(graph: dict, start: str) -> List[str]:
     return ordem
 
 
+def bfs_tree(graph: dict, start: str):
+
+    # arvore de BFS a partir de start (so o componente alcancavel)
+    if start not in graph:
+        raise KeyError("vertice nao existe")
+
+    pai: Dict[str, Optional[str]] = {start: None}
+
+    profundidade = {start: 0}
+
+    ordem = [start]
+
+    visitados = {start}
+
+    fila = deque([start])
+
+    while fila:
+
+        u = fila.popleft()
+
+        for v in sorted(graph[u].keys()):
+
+            if v not in visitados:
+
+                visitados.add(v)
+
+                pai[v] = u
+
+                profundidade[v] = profundidade[u] + 1
+
+                ordem.append(v)
+
+                fila.append(v)
+
+    return ordem, pai, profundidade
+
+
+def dfs_tree(graph: dict, start: str):
+
+    # arvore de DFS a partir de start (so o componente alcancavel)
+    if start not in graph:
+        raise KeyError("vertice nao existe")
+
+    pai: Dict[str, Optional[str]] = {}
+
+    profundidade = {}
+
+    ordem = []
+
+    visitados: Set[str] = set()
+
+    def visitar(u, p, d):
+
+        visitados.add(u)
+
+        pai[u] = p
+
+        profundidade[u] = d
+
+        ordem.append(u)
+
+        for v in sorted(graph[u].keys()):
+
+            if v not in visitados:
+
+                visitar(v, u, d + 1)
+
+    visitar(start, None, 0)
+
+    return ordem, pai, profundidade
+
+
 def dijkstra(
     graph: dict,
     start: str

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import json
 import sys
 import time
 from collections import Counter, defaultdict, deque
@@ -18,9 +17,13 @@ from .directed_algorithms import (
     bellman_ford_digraph,
     dijkstra_digraph,
     dfs_order_digraph,
+    bfs_tree_digraph,
+    dfs_tree_digraph,
 )
 
 from .snap_road import build_snap_ca_subgraph
+
+from .outputs import arred, write_json, write_manifest
 
 from .viz import (
     _matplotlib_style,
@@ -333,6 +336,96 @@ def _subgrafo_induzido(g, nos):
     return sub
 
 
+# nº de nós da amostra usada para desenhar as árvores BFS/DFS nó a nó.
+# Pequeno o suficiente para a árvore caber na tela com legibilidade.
+AMOSTRA_ARVORE = 48
+
+
+def _amostra_conexa(g, fonte, k):
+
+    # coleta os primeiros k nós alcançáveis a partir de `fonte` (BFS dirigido).
+    # Como cada nó entra por uma aresta direta de um nó já visitado, o subgrafo
+    # induzido preserva conectividade a partir da fonte.
+    fila = deque([fonte])
+
+    vistos = {fonte}
+
+    ordem = [fonte]
+
+    while fila and len(ordem) < k:
+
+        u = fila.popleft()
+
+        for v in sorted(g[u].keys()):
+
+            if v not in vistos:
+
+                vistos.add(v)
+
+                ordem.append(v)
+
+                fila.append(v)
+
+                if len(ordem) >= k:
+                    break
+
+    return vistos
+
+
+def _arvore_json(fonte, ordem, pai, prof):
+
+    # serializa uma árvore de busca (BFS ou DFS) no formato consumido pelo front
+    nos = []
+
+    for i, v in enumerate(ordem):
+
+        nos.append(
+            {
+                "id": v,
+                "pai": pai.get(v),
+                "profundidade": prof.get(v, 0),
+                "ordem": i,
+            }
+        )
+
+    return {
+        "fonte": fonte,
+        "n_nos": len(ordem),
+        "n_arestas_arvore": max(0, len(ordem) - 1),
+        "profundidade_maxima": max(prof.values()) if prof else 0,
+        "nos": nos,
+    }
+
+
+def _montar_arvores_amostra(g, fonte):
+
+    # constrói, sobre uma MESMA amostra conexa, a árvore BFS e a árvore DFS —
+    # permitindo comparar lado a lado a forma "larga e rasa" do BFS com a
+    # "profunda e estreita" do DFS.
+    nos = _amostra_conexa(g, fonte, AMOSTRA_ARVORE)
+
+    sub = _subgrafo_induzido(g, nos)
+
+    arestas_sub = sum(len(sub[u]) for u in sub)
+
+    contexto = {
+        "ordem": len(nos),
+        "arestas_dirigidas": arestas_sub,
+    }
+
+    ordem_b, pai_b, prof_b = bfs_tree_digraph(sub, fonte)
+
+    ordem_d, pai_d, prof_d = dfs_tree_digraph(sub, fonte)
+
+    arvore_bfs = _arvore_json(fonte, ordem_b, pai_b, prof_b)
+    arvore_bfs["subgrafo"] = contexto
+
+    arvore_dfs = _arvore_json(fonte, ordem_d, pai_d, prof_d)
+    arvore_dfs["subgrafo"] = contexto
+
+    return arvore_bfs, arvore_dfs
+
+
 def _rodar_bfs_dfs(g, fontes):
 
     bfs_res = []
@@ -444,16 +537,17 @@ def run_parte2(
         **meta,
         "ordem": n,
         "tamanho_arestas_dirigidas": m,
-        "densidade_dirigida": d,
+        "densidade_dirigida": arred(d),
     }
 
-    (out / "subgrafo_metricas.json").write_text(
-        json.dumps(
-            metrics,
-            indent=2,
-            ensure_ascii=False
+    write_json(
+        out / "subgrafo_metricas.json",
+        metrics,
+        parte="parte2",
+        descricao=(
+            "Métricas do subgrafo dirigido extraído do SNAP roadNet-CA "
+            "(amostra da maior componente conexa)."
         ),
-        encoding="utf-8",
     )
 
     grau_saida = Counter()
@@ -480,13 +574,26 @@ def run_parte2(
         fontes
     )
 
-    (out / "exploracao_bfs_dfs.json").write_text(
-        json.dumps(
-            {"bfs": bfs_res, "dfs": dfs_res},
-            indent=2,
-            ensure_ascii=False,
+    # árvores BFS e DFS (nó a nó) sobre uma mesma amostra conexa, enraizadas
+    # na mesma fonte usada pelo resumo de camadas do BFS.
+    arvore_bfs, arvore_dfs = _montar_arvores_amostra(
+        g,
+        fontes[0],
+    )
+
+    write_json(
+        out / "exploracao_bfs_dfs.json",
+        {
+            "bfs": bfs_res,
+            "dfs": dfs_res,
+            "arvore_bfs": arvore_bfs,
+            "arvore_dfs": arvore_dfs,
+        },
+        parte="parte2",
+        descricao=(
+            "Exploração do subgrafo: resumo de camadas do BFS, amostra da "
+            "ordem do DFS e as árvores BFS/DFS (nó a nó) de uma amostra conexa."
         ),
-        encoding="utf-8",
     )
 
     if bfs_res:
@@ -498,13 +605,15 @@ def run_parte2(
 
     demos_neg = _rodar_demos_pesos_negativos()
 
-    (out / "demos_pesos_negativos.json").write_text(
-        json.dumps(
-            demos_neg,
-            indent=2,
-            ensure_ascii=False
+    write_json(
+        out / "demos_pesos_negativos.json",
+        demos_neg,
+        parte="parte2",
+        chave_conteudo="demos",
+        descricao=(
+            "Grafos didáticos de pesos negativos: comparam Bellman-Ford "
+            "(aceita pesos negativos / detecta ciclo negativo) com Dijkstra."
         ),
-        encoding="utf-8",
     )
 
     pares = _pares_rota(list(V))
@@ -604,6 +713,48 @@ def run_parte2(
             "sem dados",
             encoding="utf-8"
         )
+
+    # catálogo dos arquivos de saída da Parte 2
+    write_manifest(
+        out,
+        parte="parte2",
+        titulo="Parte 2 — SNAP roadNet-CA",
+        arquivos=[
+            {
+                "arquivo": "subgrafo_metricas.json",
+                "tipo": "json",
+                "descricao": "Métricas do subgrafo dirigido extraído do SNAP.",
+            },
+            {
+                "arquivo": "exploracao_bfs_dfs.json",
+                "tipo": "json",
+                "descricao": (
+                    "Camadas BFS, amostra DFS e árvores BFS/DFS nó a nó."
+                ),
+            },
+            {
+                "arquivo": "demos_pesos_negativos.json",
+                "tipo": "json",
+                "descricao": "Grafos didáticos de pesos/ciclos negativos.",
+            },
+            {
+                "arquivo": "comparacao_bf_dijkstra.csv",
+                "tipo": "csv",
+                "descricao": "Comparação Bellman-Ford × Dijkstra (custo e tempo).",
+                "colunas": list(rows[0].keys()) if rows else [],
+            },
+            {
+                "arquivo": "viz_parte2_grau_saida.png",
+                "tipo": "imagem",
+                "descricao": "Distribuição do grau de saída do subgrafo.",
+            },
+            {
+                "arquivo": "viz_parte2_bfs_camadas.png",
+                "tipo": "imagem",
+                "descricao": "Quantidade de nós por camada de BFS.",
+            },
+        ],
+    )
 
     print("parte 2 concluida")
     print(f"nos: {n}")

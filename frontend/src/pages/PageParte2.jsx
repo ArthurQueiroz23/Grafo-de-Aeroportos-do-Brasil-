@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Microscope, Terminal, Network } from "lucide-react";
+import { Microscope, Terminal } from "lucide-react";
 import PageHeader from "../components/ui/PageHeader.jsx";
 import { InteractiveListTable } from "../components/ui/interactive-logs-table-shadcnui.jsx";
 import { mapComparacaoBfDijkstra } from "../lib/interactive-list-adapters.js";
@@ -168,7 +168,42 @@ function TimeBarchart({ label, dijVal, bfVal, gradId }) {
   );
 }
 
-export default function PageParte2() {
+// Cabeçalhos de cada subtópico da Parte 2 — espelham o padrão da Parte 1,
+// onde cada item de navegação é uma página com seu próprio PageHeader.
+const SECTION_HEADERS = {
+  geral: {
+    eyebrow: "SNAP RoadNet-CA",
+    title: "Parte 2 — Visão Geral",
+    subtitle:
+      "Panorama do subgrafo de estradas da Califórnia: ordem, arestas dirigidas, densidade e cobertura do benchmarking Dijkstra × Bellman-Ford.",
+  },
+  grafo: {
+    eyebrow: "SNAP RoadNet-CA",
+    title: "Grafo Interativo",
+    subtitle:
+      "Visualize os grafos de demonstração de pesos negativos e explore a estrutura de camadas BFS/DFS do subgrafo. Clique em qualquer nó para ver o caminho completo a partir da fonte.",
+  },
+  exploracao: {
+    eyebrow: "SNAP RoadNet-CA",
+    title: "Exploração BFS / DFS",
+    subtitle:
+      "Resumo das buscas em largura e profundidade sobre o subgrafo dirigido: fontes, nós alcançados, camadas de distância e ordem de visita.",
+  },
+  benchmark: {
+    eyebrow: "SNAP RoadNet-CA",
+    title: "Benchmarking — Dijkstra × Bellman-Ford",
+    subtitle:
+      "Comparação de desempenho dos algoritmos de caminho mínimo de fonte única (SSSP) e a tabela par a par de origens e destinos.",
+  },
+  visualizacoes: {
+    eyebrow: "SNAP RoadNet-CA",
+    title: "Visualizações — subgrafo SNAP",
+    subtitle:
+      "Gráficos exploratórios gerados pela análise da Parte 2. Clique em uma imagem para ampliar.",
+  },
+};
+
+export default function PageParte2({ section = "geral" }) {
   const [sub, setSub] = useState(null);
   const [cmpRows, setCmpRows] = useState([]);
   const [timing, setTiming] = useState(null);
@@ -240,233 +275,288 @@ export default function PageParte2() {
   const dij = timing?.dijkstra;
   const bf = timing?.bf;
   const hasSnapGraph = (demos && demos.length > 0) || (exploracao && (exploracao.bfs?.length > 0 || exploracao.dfs?.length > 0));
+  const hasExploracaoTexto =
+    exploracao && (exploracao.bfs?.length > 0 || exploracao.dfs?.length > 0);
+
+  const header = SECTION_HEADERS[section] ?? SECTION_HEADERS.geral;
 
   return (
     <div className="page-parte2">
-      <PageHeader
-        eyebrow="SNAP RoadNet-CA"
-        title="Parte 2 — SNAP RoadNet-CA"
-        subtitle="Análise do subgrafo de estradas da Califórnia: benchmarking Dijkstra × Bellman-Ford, exploração BFS/DFS e grafo interativo com rotas completas."
-      />
+      <PageHeader eyebrow={header.eyebrow} title={header.title} subtitle={header.subtitle} />
 
-      {/* ── KPIs ─────────────────────────────────── */}
-      {!sub ? (
-        <SkeletonKpiGrid count={5} />
-      ) : (
-        <div className="kpi-grid">
-          <div className="kpi-card">
-            <div className="kpi-label">Vértices (subgrafo)</div>
-            <div className="kpi-value">{sub?.ordem?.toLocaleString() ?? "—"}</div>
-            <div className="kpi-unit">nós</div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">Arestas dirigidas</div>
-            <div className="kpi-value">{sub?.tamanho_arestas_dirigidas?.toLocaleString() ?? "—"}</div>
-            <div className="kpi-unit">arestas</div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">Densidade dirigida</div>
-            <div className="kpi-value">{sub ? (sub.densidade_dirigida * 100).toFixed(3) : "—"}</div>
-            <div className="kpi-unit">%</div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">Pares avaliados</div>
-            <div className="kpi-value">{timing?.pares ?? "—"}</div>
-            <div className="kpi-unit">origem–destino</div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-label">BF = Dijkstra</div>
-            <div className="kpi-value">{timing?.coincidencias ?? "—"}</div>
-            <div className="kpi-unit">de {timing?.pares ?? "—"} pares</div>
-          </div>
-        </div>
+      {/* ───────────────────── Visão Geral ───────────────────── */}
+      {section === "geral" && (
+        <>
+          {!sub ? (
+            <SkeletonKpiGrid count={5} />
+          ) : (
+            <div className="kpi-grid">
+              <div className="kpi-card">
+                <div className="kpi-label">Vértices (subgrafo)</div>
+                <div className="kpi-value">{sub?.ordem?.toLocaleString() ?? "—"}</div>
+                <div className="kpi-unit">nós</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">Arestas dirigidas</div>
+                <div className="kpi-value">{sub?.tamanho_arestas_dirigidas?.toLocaleString() ?? "—"}</div>
+                <div className="kpi-unit">arestas</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">Densidade dirigida</div>
+                <div className="kpi-value">{sub ? (sub.densidade_dirigida * 100).toFixed(3) : "—"}</div>
+                <div className="kpi-unit">%</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">Pares avaliados</div>
+                <div className="kpi-value">{timing?.pares ?? "—"}</div>
+                <div className="kpi-unit">origem–destino</div>
+              </div>
+              <div className="kpi-card">
+                <div className="kpi-label">BF = Dijkstra</div>
+                <div className="kpi-value">{timing?.coincidencias ?? "—"}</div>
+                <div className="kpi-unit">de {timing?.pares ?? "—"} pares</div>
+              </div>
+            </div>
+          )}
+
+          <section className="section">
+            <h2 className="section-title">
+              <Microscope size={18} strokeWidth={1.75} aria-hidden="true" />
+              Sobre o subgrafo SNAP
+            </h2>
+            <p className="section-lead">
+              A Parte 2 analisa um subgrafo dirigido extraído do dataset SNAP RoadNet-CA (rede de
+              estradas da Califórnia). Os subtópicos a seguir aprofundam cada eixo da análise:
+            </p>
+            <div className="callout-grid">
+              <div className="callout" style={{ "--callout-color": "var(--color-primary)" }}>
+                <div className="callout-title">Grafo Interativo</div>
+                <div className="callout-desc">
+                  Demonstrações de pesos negativos e exploração de camadas BFS/DFS, com caminhos
+                  completos a partir da fonte.
+                </div>
+              </div>
+              <div className="callout" style={{ "--callout-color": "var(--color-accent)" }}>
+                <div className="callout-title">Exploração BFS / DFS</div>
+                <div className="callout-desc">
+                  Resumo numérico das buscas: nós alcançados, camadas de distância e ordem de visita.
+                </div>
+              </div>
+              <div className="callout" style={{ "--callout-color": "var(--region-sul)" }}>
+                <div className="callout-title">Benchmarking</div>
+                <div className="callout-desc">
+                  Desempenho de Dijkstra × Bellman-Ford e a tabela par a par de origens e destinos.
+                </div>
+              </div>
+              <div className="callout" style={{ "--callout-color": "var(--region-norte)" }}>
+                <div className="callout-title">Visualizações</div>
+                <div className="callout-desc">
+                  Gráficos exploratórios gerados pela análise — distribuição de graus e camadas BFS.
+                </div>
+              </div>
+            </div>
+            {dij && bf && (
+              <div className="insight-box" style={{ marginTop: "var(--space-6)" }}>
+                Sobre {timing?.pares ?? "—"} pares avaliados, Dijkstra foi{" "}
+                <strong style={{ color: "var(--color-primary)" }}>
+                  {bf.total > 0 ? (bf.total / dij.total).toFixed(1) : "—"}×
+                </strong>{" "}
+                mais rápido que Bellman-Ford no total, com{" "}
+                <strong style={{ color: "var(--color-success)" }}>
+                  {timing?.coincidencias}/{timing?.pares}
+                </strong>{" "}
+                resultados coincidentes. Veja o detalhamento em{" "}
+                <strong>Benchmarking</strong>.
+              </div>
+            )}
+          </section>
+        </>
       )}
 
-      {/* ── Grafo Interativo SNAP ─────────────── */}
-      <section className="section">
-        <h2 className="section-title">
-          <Network size={18} strokeWidth={1.75} aria-hidden="true" />
-          Grafo Interativo — SNAP RoadNet-CA
-        </h2>
-        <p className="section-lead">
-          Visualize os grafos de demonstração de pesos negativos e explore a estrutura de camadas BFS/DFS do subgrafo.
-          Clique em qualquer nó para ver o caminho completo a partir da fonte.
-        </p>
-        {hasSnapGraph ? (
-          <SnapGraph demos={demos} exploracao={exploracao} />
+      {/* ───────────────────── Grafo Interativo ───────────────────── */}
+      {section === "grafo" && (
+        <section className="section">
+          {hasSnapGraph ? (
+            <SnapGraph demos={demos} exploracao={exploracao} />
+          ) : (
+            <EmptyState
+              icon={Terminal}
+              title="Grafo não disponível"
+              description="Execute python -m src.cli parte2 no terminal do projeto para gerar os dados."
+            />
+          )}
+        </section>
+      )}
+
+      {/* ───────────────────── Exploração BFS/DFS ───────────────────── */}
+      {section === "exploracao" && (
+        hasExploracaoTexto ? (
+          <div className="two-col">
+            {exploracao.bfs?.length > 0 && (
+              <section className="section" style={{ marginBottom: 0 }}>
+                <h2 className="section-title">BFS dirigido — resumo</h2>
+                {exploracao.bfs.map((b) => (
+                  <div key={b.fonte} style={{ marginBottom: "var(--space-5)" }}>
+                    <div className="info-row">
+                      <span className="info-key">Fonte</span>
+                      <span className="info-val mono">{b.fonte}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-key">Nós alcançados</span>
+                      <span className="info-val">{b.nos_alcancados?.toLocaleString()}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-key">Camadas (dist → qtd)</span>
+                      <span className="info-val mono">
+                        {Object.entries(b.camadas || {})
+                          .map(([d, n]) => `${d}:${n}`)
+                          .join(" · ")}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            )}
+            {exploracao.dfs?.length > 0 && (
+              <section className="section" style={{ marginBottom: 0 }}>
+                <h2 className="section-title">DFS dirigido — resumo</h2>
+                {exploracao.dfs.map((d) => (
+                  <div key={d.fonte} style={{ marginBottom: "var(--space-5)" }}>
+                    <div className="info-row">
+                      <span className="info-key">Fonte</span>
+                      <span className="info-val mono">{d.fonte}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-key">Nós visitados</span>
+                      <span className="info-val">{d.nos_visitados?.toLocaleString()}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-key">Amostra da ordem</span>
+                      <span className="info-val mono">
+                        {(d.amostra_dfs || []).join(" → ")}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            )}
+          </div>
         ) : (
           <EmptyState
             icon={Terminal}
-            title="Grafo não disponível"
-            description="Execute python -m src.cli parte2 no terminal do projeto para gerar os dados."
+            title="Exploração não disponível"
+            description="Execute python -m src.cli parte2 no terminal do projeto para gerar os dados de BFS/DFS."
           />
-        )}
-      </section>
-
-      {/* ── Visualizações PNG ──────────────────── */}
-      <section className="section">
-        <h2 className="section-title">
-          <Microscope size={18} strokeWidth={1.75} aria-hidden="true" />
-          Visualizações — subgrafo SNAP
-        </h2>
-        <p className="section-lead">
-          Gráficos exploratórios gerados pela análise da Parte 2. Clique em uma imagem para ampliar.
-        </p>
-        {vizDisponiveis === null ? (
-          <LoadingCenter label="Verificando visualizações…" />
-        ) : vizDisponiveis.length > 0 ? (
-          <ChartSequence images={vizDisponiveis} onOpen={setModal} />
-        ) : (
-          <EmptyState
-            icon={Terminal}
-            title="Nenhuma visualização encontrada"
-            description="Execute python -m src.cli parte2 no terminal do projeto para gerar os gráficos do subgrafo SNAP."
-          />
-        )}
-      </section>
-
-      {/* ── BFS/DFS amostras (texto) ─────────── */}
-      {exploracao && (exploracao.bfs?.length > 0 || exploracao.dfs?.length > 0) && (
-        <div className="two-col">
-          {exploracao.bfs?.length > 0 && (
-            <section className="section" style={{ marginBottom: 0 }}>
-              <h2 className="section-title">BFS dirigido — resumo</h2>
-              {exploracao.bfs.map((b) => (
-                <div key={b.fonte} style={{ marginBottom: "var(--space-5)" }}>
-                  <div className="info-row">
-                    <span className="info-key">Fonte</span>
-                    <span className="info-val mono">{b.fonte}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-key">Nós alcançados</span>
-                    <span className="info-val">{b.nos_alcancados?.toLocaleString()}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-key">Camadas (dist → qtd)</span>
-                    <span className="info-val mono">
-                      {Object.entries(b.camadas || {})
-                        .map(([d, n]) => `${d}:${n}`)
-                        .join(" · ")}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </section>
-          )}
-          {exploracao.dfs?.length > 0 && (
-            <section className="section" style={{ marginBottom: 0 }}>
-              <h2 className="section-title">DFS dirigido — resumo</h2>
-              {exploracao.dfs.map((d) => (
-                <div key={d.fonte} style={{ marginBottom: "var(--space-5)" }}>
-                  <div className="info-row">
-                    <span className="info-key">Fonte</span>
-                    <span className="info-val mono">{d.fonte}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-key">Nós visitados</span>
-                    <span className="info-val">{d.nos_visitados?.toLocaleString()}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-key">Amostra da ordem</span>
-                    <span className="info-val mono">
-                      {(d.amostra_dfs || []).join(" → ")}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </section>
-          )}
-        </div>
+        )
       )}
 
-      {/* ── Tempos individuais ─────────────────── */}
-      <div className="two-col">
-        <section className="section">
-          <h2 className="section-title">Dijkstra (SSSP)</h2>
-          <div className="info-row">
-            <span className="info-key">Fontes distintas</span>
-            <span className="info-val">{timing?.fontes ?? "—"}</span>
+      {/* ───────────────────── Benchmarking ───────────────────── */}
+      {section === "benchmark" && (
+        <>
+          <div className="two-col">
+            <section className="section">
+              <h2 className="section-title">Dijkstra (SSSP)</h2>
+              <div className="info-row">
+                <span className="info-key">Fontes distintas</span>
+                <span className="info-val">{timing?.fontes ?? "—"}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-key">Tempo total</span>
+                <span className="info-val" style={{ color: "var(--color-primary)", fontWeight: 700 }}>
+                  {dij?.total?.toFixed(4) ?? "—"} s
+                </span>
+              </div>
+              <div className="info-row">
+                <span className="info-key">Tempo médio por fonte</span>
+                <span className="info-val">{dij?.medio?.toFixed(4) ?? "—"} s</span>
+              </div>
+            </section>
+            <section className="section">
+              <h2 className="section-title">Bellman-Ford (SSSP)</h2>
+              <div className="info-row">
+                <span className="info-key">Fontes distintas</span>
+                <span className="info-val">{timing?.fontes ?? "—"}</span>
+              </div>
+              <div className="info-row">
+                <span className="info-key">Tempo total</span>
+                <span className="info-val" style={{ color: "var(--color-accent)", fontWeight: 700 }}>
+                  {bf?.total?.toFixed(4) ?? "—"} s
+                </span>
+              </div>
+              <div className="info-row">
+                <span className="info-key">Tempo médio por fonte</span>
+                <span className="info-val">{bf?.medio?.toFixed(4) ?? "—"} s</span>
+              </div>
+            </section>
           </div>
-          <div className="info-row">
-            <span className="info-key">Tempo total</span>
-            <span className="info-val" style={{ color: "var(--color-primary)", fontWeight: 700 }}>
-              {dij?.total?.toFixed(4) ?? "—"} s
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-key">Tempo médio por fonte</span>
-            <span className="info-val">{dij?.medio?.toFixed(4) ?? "—"} s</span>
-          </div>
-        </section>
-        <section className="section">
-          <h2 className="section-title">Bellman-Ford (SSSP)</h2>
-          <div className="info-row">
-            <span className="info-key">Fontes distintas</span>
-            <span className="info-val">{timing?.fontes ?? "—"}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-key">Tempo total</span>
-            <span className="info-val" style={{ color: "var(--color-accent)", fontWeight: 700 }}>
-              {bf?.total?.toFixed(4) ?? "—"} s
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="info-key">Tempo médio por fonte</span>
-            <span className="info-val">{bf?.medio?.toFixed(4) ?? "—"} s</span>
-          </div>
-        </section>
-      </div>
 
-      {/* ── Benchmarking ──────────────────────── */}
-      <section className="section">
-        <h2 className="section-title">Benchmarking — Dijkstra × Bellman-Ford</h2>
-        <p className="section-lead">
-          Comparação de performance com escalas padronizadas por métrica.{" "}
-          <span style={{ color: "var(--color-primary)" }}>■ Dijkstra</span> vs{" "}
-          <span style={{ color: "var(--color-accent)" }}>■ Bellman-Ford</span>.
-          Em grafos sem pesos negativos, Dijkstra é sistematicamente mais eficiente.
-        </p>
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--space-8)",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            paddingTop: "var(--space-2)",
-          }}
-        >
-          <TimeBarchart label="Tempo Total (s)" dijVal={dij?.total} bfVal={bf?.total} gradId="total" />
-          <TimeBarchart label="Tempo Médio por Fonte (s)" dijVal={dij?.medio} bfVal={bf?.medio} gradId="medio" />
-        </div>
-        {dij && bf && (
-          <div className="insight-box" style={{ marginTop: "var(--space-6)" }}>
-            Dijkstra foi{" "}
-            <strong style={{ color: "var(--color-primary)" }}>
-              {bf.total > 0 ? (bf.total / dij.total).toFixed(1) : "—"}×
-            </strong>{" "}
-            mais rápido no total. Coincidência de resultados:{" "}
-            <strong style={{ color: "var(--color-success)" }}>
-              {timing?.coincidencias}/{timing?.pares} pares
-            </strong>
-            .
-          </div>
-        )}
-      </section>
+          <section className="section">
+            <h2 className="section-title">Comparação de desempenho</h2>
+            <p className="section-lead">
+              Comparação de performance com escalas padronizadas por métrica.{" "}
+              <span style={{ color: "var(--color-primary)" }}>■ Dijkstra</span> vs{" "}
+              <span style={{ color: "var(--color-accent)" }}>■ Bellman-Ford</span>.
+              Em grafos sem pesos negativos, Dijkstra é sistematicamente mais eficiente.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: "var(--space-8)",
+                justifyContent: "center",
+                flexWrap: "wrap",
+                paddingTop: "var(--space-2)",
+              }}
+            >
+              <TimeBarchart label="Tempo Total (s)" dijVal={dij?.total} bfVal={bf?.total} gradId="total" />
+              <TimeBarchart label="Tempo Médio por Fonte (s)" dijVal={dij?.medio} bfVal={bf?.medio} gradId="medio" />
+            </div>
+            {dij && bf && (
+              <div className="insight-box" style={{ marginTop: "var(--space-6)" }}>
+                Dijkstra foi{" "}
+                <strong style={{ color: "var(--color-primary)" }}>
+                  {bf.total > 0 ? (bf.total / dij.total).toFixed(1) : "—"}×
+                </strong>{" "}
+                mais rápido no total. Coincidência de resultados:{" "}
+                <strong style={{ color: "var(--color-success)" }}>
+                  {timing?.coincidencias}/{timing?.pares} pares
+                </strong>
+                .
+              </div>
+            )}
+          </section>
 
-      {/* ── Comparação tabela ─────────────────── */}
-      <section className="section">
-        <h2 className="section-title">Comparação BF × Dijkstra (primeiros 20 pares)</h2>
-        {cmpRows.length === 0 ? (
-          <LoadingCenter label="Carregando comparação…" />
-        ) : (
-          <InteractiveListTable
-            title="Comparação BF × Dijkstra"
-            items={mapComparacaoBfDijkstra(cmpRows)}
-            searchPlaceholder="Buscar par origem–destino…"
-            filterLabels={{ level: "Resultado", service: "Origem", status: "Destino" }}
-          />
-        )}
-      </section>
+          <section className="section">
+            <h2 className="section-title">Comparação BF × Dijkstra (primeiros 20 pares)</h2>
+            {cmpRows.length === 0 ? (
+              <LoadingCenter label="Carregando comparação…" />
+            ) : (
+              <InteractiveListTable
+                title="Comparação BF × Dijkstra"
+                items={mapComparacaoBfDijkstra(cmpRows)}
+                searchPlaceholder="Buscar par origem–destino…"
+                filterLabels={{ level: "Resultado", service: "Origem", status: "Destino" }}
+              />
+            )}
+          </section>
+        </>
+      )}
+
+      {/* ───────────────────── Visualizações ───────────────────── */}
+      {section === "visualizacoes" && (
+        <section className="section">
+          {vizDisponiveis === null ? (
+            <LoadingCenter label="Verificando visualizações…" />
+          ) : vizDisponiveis.length > 0 ? (
+            <ChartSequence images={vizDisponiveis} onOpen={setModal} />
+          ) : (
+            <EmptyState
+              icon={Terminal}
+              title="Nenhuma visualização encontrada"
+              description="Execute python -m src.cli parte2 no terminal do projeto para gerar os gráficos do subgrafo SNAP."
+            />
+          )}
+        </section>
+      )}
 
       <Modal
         open={!!modal}

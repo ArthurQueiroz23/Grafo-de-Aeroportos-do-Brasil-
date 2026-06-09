@@ -1,32 +1,42 @@
-[
-  {
-    "ordem": 4,
-    "tamanho": 3,
-    "densidade": 0.5,
-    "regiao": "Norte"
+{
+  "_meta": {
+    "gerado_em": "2026-06-04T21:35:36-03:00",
+    "versao_schema": "1.0",
+    "gerador": "Grafo de Aeroportos do Brasil — src.cli",
+    "parte": "parte1",
+    "descricao": "Métricas do subgrafo induzido de cada região do Brasil (ordem, tamanho e densidade).",
+    "n_itens": 5
   },
-  {
-    "ordem": 6,
-    "tamanho": 5,
-    "densidade": 0.3333333333333333,
-    "regiao": "Nordeste"
-  },
-  {
-    "ordem": 2,
-    "tamanho": 1,
-    "densidade": 1.0,
-    "regiao": "Centro-Oeste"
-  },
-  {
-    "ordem": 5,
-    "tamanho": 4,
-    "densidade": 0.4,
-    "regiao": "Sudeste"
-  },
-  {
-    "ordem": 3,
-    "tamanho": 2,
-    "densidade": 0.6666666666666666,
-    "regiao": "Sul"
-  }
-]
+  "regioes": [
+    {
+      "regiao": "Norte",
+      "ordem": 4,
+      "tamanho": 3,
+      "densidade": 0.5
+    },
+    {
+      "regiao": "Nordeste",
+      "ordem": 6,
+      "tamanho": 5,
+      "densidade": 0.333333
+    },
+    {
+      "regiao": "Centro-Oeste",
+      "ordem": 2,
+      "tamanho": 1,
+      "densidade": 1.0
+    },
+    {
+      "regiao": "Sudeste",
+      "ordem": 5,
+      "tamanho": 4,
+      "densidade": 0.4
+    },
+    {
+      "regiao": "Sul",
+      "ordem": 3,
+      "tamanho": 2,
+      "densidade": 0.666667
+    }
+  ]
+}

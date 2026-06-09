@@ -7,6 +7,7 @@ from .io import (
 )
 
 from .solve import (
+    escrever_manifesto_parte1,
     run_metrics,
     run_routes,
 )
@@ -172,6 +173,15 @@ def main():
         run_all_visualizations(root)
 
         print("Visualizacoes geradas!")
+
+    # =========================
+    # MANIFESTO (catálogo de saída)
+    # =========================
+    if args.comando in ["metricas", "rotas", "viz", "tudo"]:
+
+        escrever_manifesto_parte1(out_dir)
+
+        print("Manifesto da Parte 1 atualizado!")
 
 
 if __name__ == "__main__":

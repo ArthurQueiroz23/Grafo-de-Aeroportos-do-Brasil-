@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "gerado_em": "2026-06-04T21:36:12-03:00",
+    "versao_schema": "1.0",
+    "gerador": "Grafo de Aeroportos do Brasil — src.cli",
+    "parte": "parte2",
+    "descricao": "Catálogo dos arquivos de saída — Parte 2 — SNAP roadNet-CA",
+    "total_arquivos": 6
+  },
+  "arquivos": [
+    {
+      "arquivo": "subgrafo_metricas.json",
+      "tipo": "json",
+      "descricao": "Métricas do subgrafo dirigido extraído do SNAP.",
+      "existe": true,
+      "bytes": 622
+    },
+    {
+      "arquivo": "exploracao_bfs_dfs.json",
+      "tipo": "json",
+      "descricao": "Camadas BFS, amostra DFS e árvores BFS/DFS nó a nó.",
+      "existe": true,
+      "bytes": 13981
+    },
+    {
+      "arquivo": "demos_pesos_negativos.json",
+      "tipo": "json",
+      "descricao": "Grafos didáticos de pesos/ciclos negativos.",
+      "existe": true,
+      "bytes": 2172
+    },
+    {
+      "arquivo": "comparacao_bf_dijkstra.csv",
+      "tipo": "csv",
+      "descricao": "Comparação Bellman-Ford × Dijkstra (custo e tempo).",
+      "colunas": [
+        "origem",
+        "destino",
+        "distancia_bellman_ford",
+        "distancia_dijkstra",
+        "diferenca_abs",
+        "coincide",
+        "tempo_bf",
+        "tempo_dijkstra"
+      ],
+      "existe": true,
+      "bytes": 787
+    },
+    {
+      "arquivo": "viz_parte2_grau_saida.png",
+      "tipo": "imagem",
+      "descricao": "Distribuição do grau de saída do subgrafo.",
+      "existe": true,
+      "bytes": 59919
+    },
+    {
+      "arquivo": "viz_parte2_bfs_camadas.png",
+      "tipo": "imagem",
+      "descricao": "Quantidade de nós por camada de BFS.",
+      "existe": true,
+      "bytes": 58960
+    }
+  ]
+}

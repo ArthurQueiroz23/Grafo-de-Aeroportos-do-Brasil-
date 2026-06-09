@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 from collections import defaultdict, deque
+from pathlib import Path
 
 
 def snap_edge_weight(u, v, mode):
@@ -234,7 +235,9 @@ def build_snap_ca_subgraph(
 
     meta = {
 
-        "arquivo": str(gz_path),
+        # apenas o nome do arquivo: o caminho absoluto vaza o ambiente de
+        # quem gerou e nao serve para o consumidor do output
+        "arquivo": Path(gz_path).name,
 
         "linhas_lidas_amostra": len(raw),
 

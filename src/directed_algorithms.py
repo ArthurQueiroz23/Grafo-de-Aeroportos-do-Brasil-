@@ -94,6 +94,81 @@ def dfs_order_digraph(graph, start):
     return ordem
 
 
+def bfs_tree_digraph(graph, start):
+
+    # arvore de BFS (dirigida) a partir de start
+    # percorre apenas o que e alcancavel a partir da fonte
+    if start not in graph:
+        raise KeyError("vertice nao existe")
+
+    pai = {start: None}
+
+    profundidade = {start: 0}
+
+    ordem = [start]
+
+    visitados = {start}
+
+    fila = deque([start])
+
+    while fila:
+
+        u = fila.popleft()
+
+        # ordena os vizinhos pra arvore ser deterministica
+        for v in sorted(graph[u].keys()):
+
+            if v not in visitados:
+
+                visitados.add(v)
+
+                pai[v] = u
+
+                profundidade[v] = profundidade[u] + 1
+
+                ordem.append(v)
+
+                fila.append(v)
+
+    return ordem, pai, profundidade
+
+
+def dfs_tree_digraph(graph, start):
+
+    # arvore de DFS (dirigida) a partir de start
+    # so percorre o componente alcancavel a partir da fonte
+    if start not in graph:
+        raise KeyError("vertice nao existe")
+
+    pai = {}
+
+    profundidade = {}
+
+    ordem = []
+
+    visitados = set()
+
+    def visitar(u, p, d):
+
+        visitados.add(u)
+
+        pai[u] = p
+
+        profundidade[u] = d
+
+        ordem.append(u)
+
+        for v in sorted(graph[u].keys()):
+
+            if v not in visitados:
+
+                visitar(v, u, d + 1)
+
+    visitar(start, None, 0)
+
+    return ordem, pai, profundidade
+
+
 def dijkstra_digraph(graph, start):
 
     # verifica peso negativo

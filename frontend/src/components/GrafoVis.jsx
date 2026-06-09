@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Network } from "vis-network";
 import { DataSet } from "vis-data";
-import { Focus, X, Plus, Minus, Maximize2 } from "lucide-react";
+import { Focus, X, Plus, Minus, Maximize2, Route } from "lucide-react";
 import AppButton from "./ui/AppButton.jsx";
 import { REGION_HEX, GRAPH } from "../constants/theme.js";
 import { layoutAirports } from "./grafoLayout.js";
@@ -199,6 +199,14 @@ function getNeighbors(edgeList, nodeId) {
 const PATH_DEST_COLOR = "#3d9b8f";
 const PATH_DEST_GLOW  = "rgba(61,155,143,0.55)";
 
+// Arestas sem direção (estado padrão) e com seta indicando o sentido do percurso.
+const NO_ARROWS = { to: { enabled: false }, from: { enabled: false } };
+function pathArrows(reversed) {
+  return reversed
+    ? { to: { enabled: false }, from: { enabled: true, scaleFactor: 0.75, type: "arrow" } }
+    : { to: { enabled: true, scaleFactor: 0.75, type: "arrow" }, from: { enabled: false } };
+}
+
 function GraphLegend({ className = "", algoLabel = "Caminho mínimo", showExplore = false }) {
   return (
     <div className={`graph-legend-card ${className}`.trim()}>
@@ -258,6 +266,7 @@ export default function GrafoVis({
   regionMap = {},
   grauMap = {},
   algoLabel = "Caminho mínimo",
+  isolateDefault = true,
 }) {
   const containerRef    = useRef(null);
   const networkRef      = useRef(null);
@@ -279,9 +288,18 @@ export default function GrafoVis({
   const [metrics, setMetrics]               = useState({ nodes: 0, edges: 0, density: 0 });
   const [selectedId, setSelectedId]         = useState(null);
   const [routeCount, setRouteCount]         = useState(0);
+  // Modo "isolar rota": esconde tudo que não faz parte da rota encontrada.
+  const [isolateRoute, setIsolateRoute]     = useState(isolateDefault);
 
-  highlightPathRef.current = highlightPath;
-  routesOnRef.current      = routesOn;
+  const filterRegionRef    = useRef(filterRegion);
+  const filterMinDegreeRef = useRef(filterMinDegree);
+  const isolateRouteRef    = useRef(isolateRoute);
+
+  highlightPathRef.current    = highlightPath;
+  routesOnRef.current         = routesOn;
+  filterRegionRef.current     = filterRegion;
+  filterMinDegreeRef.current  = filterMinDegree;
+  isolateRouteRef.current     = isolateRoute;
 
   const maxGrau = useMemo(() => {
     const vals = Object.values(grauMap);
@@ -379,8 +397,8 @@ export default function GrafoVis({
 
     edgesRef.current.update(
       edgesRef.current.get().map((e) => {
-        if (e._filterHidden) {
-          return { id: e.id, hidden: true, _selectionHidden: false };
+        if (e._filterHidden || e._isolateHidden) {
+          return { id: e.id, hidden: true, _selectionHidden: false, arrows: NO_ARROWS };
         }
 
         const inPath = pathEdgeStepMap.has(`${e.from}__${e.to}`);
@@ -388,13 +406,16 @@ export default function GrafoVis({
         const mandatory = e._mandatory && showMandatory;
 
         if (focusId && !connected && !inPath) {
-          return { id: e.id, hidden: true, _selectionHidden: true, title: null };
+          return { id: e.id, hidden: true, _selectionHidden: true, title: null, arrows: NO_ARROWS };
         }
 
         visibleRoutes += 1;
 
         if (inPath) {
           const info = pathEdgeStepMap.get(`${e.from}__${e.to}`);
+          // Seta aponta no sentido do percurso (origem → destino), mesmo que a
+          // aresta tenha sido cadastrada na direção inversa.
+          const reversed = e.to !== info.to;
           return {
             id: e.id,
             hidden: false,
@@ -403,6 +424,7 @@ export default function GrafoVis({
             width: 4.5,
             shadow: { enabled: true, color: GRAPH.pathGlow, size: 14, x: 0, y: 0 },
             title: buildEdgeTooltip(info.from, info.to, e._weight, info.step, info.total),
+            arrows: pathArrows(reversed),
             zIndex: 3,
           };
         }
@@ -416,6 +438,7 @@ export default function GrafoVis({
             width: e._baseWidth + 1.2,
             shadow: { enabled: true, color: "rgba(232,168,56,0.25)", size: 6, x: 0, y: 0 },
             title: null,
+            arrows: NO_ARROWS,
             zIndex: 2,
           };
         }
@@ -429,6 +452,7 @@ export default function GrafoVis({
             width: e._baseWidth * 0.7,
             shadow: false,
             title: null,
+            arrows: NO_ARROWS,
             zIndex: 0,
           };
         }
@@ -444,6 +468,7 @@ export default function GrafoVis({
           width: mandatory ? e._baseWidth + 0.5 : e._baseWidth,
           shadow: false,
           title: null,
+          arrows: NO_ARROWS,
           zIndex: mandatory ? 1 : 0,
         };
       })
@@ -689,6 +714,7 @@ export default function GrafoVis({
             width: 4.5,
             shadow: { enabled: true, color: GRAPH.pathGlow, size: 14, x: 0, y: 0 },
             title: buildEdgeTooltip(from, to, edge._weight, stepNum, total),
+            arrows: pathArrows(edge.to !== to),
             zIndex: 3,
           });
         }
@@ -839,6 +865,63 @@ export default function GrafoVis({
     });
   }, []);
 
+  // ── Recalcula a visibilidade de nós/arestas ────────────────────────────────
+  // Combina os filtros (região/grau) com o modo "isolar rota": quando ativo e
+  // existe uma rota, esconde tudo que não pertence ao caminho encontrado.
+  const recomputeVisibility = useCallback(() => {
+    if (!nodesRef.current || !edgesRef.current) return;
+
+    const path = highlightPathRef.current || [];
+    const isolate = isolateRouteRef.current && path.length > 1;
+    const pathNodes = new Set(path);
+    const pathEdgeKeys = new Set();
+    if (isolate) {
+      for (let i = 0; i < path.length - 1; i++) {
+        pathEdgeKeys.add(`${path[i]}__${path[i + 1]}`);
+        pathEdgeKeys.add(`${path[i + 1]}__${path[i]}`);
+      }
+    }
+
+    const region = filterRegionRef.current;
+    const minDegree = filterMinDegreeRef.current;
+
+    const nodeUpdates = nodesRef.current.get().map((n) => {
+      const regionMatch = !region || n._regiao === region;
+      const degreeMatch = (n._grau || 0) >= minDegree;
+      let hidden = !(regionMatch && degreeMatch);
+      if (!hidden && isolate && !pathNodes.has(n.id)) hidden = true;
+      return { id: n.id, hidden };
+    });
+    nodesRef.current.update(nodeUpdates);
+
+    const hiddenNodes = new Set(
+      nodeUpdates.filter((n) => n.hidden).map((n) => n.id)
+    );
+
+    edgesRef.current.update(
+      edgesRef.current.get().map((e) => ({
+        id: e.id,
+        _filterHidden: hiddenNodes.has(e.from) || hiddenNodes.has(e.to),
+        _isolateHidden: isolate && !pathEdgeKeys.has(`${e.from}__${e.to}`),
+      }))
+    );
+
+    const visNodes = nodeUpdates.filter((n) => !n.hidden).length;
+    const visEdges = edgesRef.current
+      .get()
+      .filter((e) => !e._filterHidden && !e._isolateHidden && !e._selectionHidden).length;
+
+    setMetrics({
+      nodes: visNodes,
+      edges: visEdges,
+      density: visNodes >= 2 ? (2 * visEdges) / (visNodes * (visNodes - 1)) : 0,
+    });
+
+    if (selectedIdRef.current && hiddenNodes.has(selectedIdRef.current)) {
+      applySelectionRef.current(null);
+    }
+  }, []);
+
   // ── Inicialização da rede vis-network ──────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current || !airports?.length || !edges?.length) return;
@@ -929,37 +1012,7 @@ export default function GrafoVis({
   useEffect(() => {
     if (!nodesRef.current || !edgesRef.current) return;
 
-    const nodeUpdates = nodesRef.current.get().map((n) => {
-      const regionMatch = !filterRegion || n._regiao === filterRegion;
-      const degreeMatch = (n._grau || 0) >= filterMinDegree;
-      return { id: n.id, hidden: !(regionMatch && degreeMatch) };
-    });
-    nodesRef.current.update(nodeUpdates);
-
-    const hiddenNodes = new Set(
-      nodeUpdates.filter((n) => n.hidden).map((n) => n.id)
-    );
-
-    if (selectedIdRef.current && hiddenNodes.has(selectedIdRef.current)) {
-      applySelectionRef.current(null);
-    }
-
-    edgesRef.current.update(
-      edgesRef.current.get().map((e) => ({
-        id: e.id,
-        _filterHidden: hiddenNodes.has(e.from) || hiddenNodes.has(e.to),
-      }))
-    );
-
-    const visNodes = nodeUpdates.filter((n) => !n.hidden).length;
-    const allEdges = edgesRef.current.get();
-    const visEdges = allEdges.filter((e) => !e._filterHidden && !e._selectionHidden).length;
-
-    setMetrics({
-      nodes: visNodes,
-      edges: visEdges,
-      density: visNodes >= 2 ? (2 * visEdges) / (visNodes * (visNodes - 1)) : 0,
-    });
+    recomputeVisibility();
 
     requestAnimationFrame(() => {
       clearAnimTimers();
@@ -970,11 +1023,11 @@ export default function GrafoVis({
       setRouteCount(id ? count : 0);
       syncNodeStyles(id, highlightPathRef.current);
     });
-  }, [filterRegion, filterMinDegree, fitNetwork, syncEdgeStyles, syncNodeStyles, clearAnimTimers]);
+  }, [filterRegion, filterMinDegree, fitNetwork, syncEdgeStyles, syncNodeStyles, clearAnimTimers, recomputeVisibility]);
 
-  // ── Reação ao highlightPath, explorationOrder e routesOn ──────────────────
-  // Quando o caminho muda: (1) animação de exploração, (2) animação do caminho.
-  // Quando só routesOn muda: sincroniza estilos instantaneamente.
+  // ── Reação ao highlightPath, explorationOrder, routesOn e isolateRoute ─────
+  // Quando o caminho muda: aplica isolamento, depois (1) animação de exploração,
+  // (2) animação do caminho. Trocar isolateRoute reaplica a visibilidade na hora.
   useEffect(() => {
     const prev = prevPathRef.current;
     const pathChanged =
@@ -982,20 +1035,27 @@ export default function GrafoVis({
       highlightPath.some((n, i) => n !== prev[i]);
     prevPathRef.current = highlightPath;
 
+    // Esconde/revela nós e arestas conforme o modo isolar rota antes de animar.
+    recomputeVisibility();
+
     if (pathChanged && highlightPath.length > 1) {
-      if (explorationOrder.length > 0) {
+      requestAnimationFrame(() => fitNetwork({ clearSelection: false }));
+      // Com a rota isolada, a animação de exploração é pulada (os nós explorados
+      // estariam ocultos); revela direto o caminho destacado.
+      if (explorationOrder.length > 0 && !isolateRoute) {
         animateExploration(explorationOrder, () => animatePathReveal(highlightPath));
       } else {
         animatePathReveal(highlightPath);
       }
     } else {
       clearAnimTimers();
+      requestAnimationFrame(() => fitNetwork({ clearSelection: false }));
       const id = selectedIdRef.current;
       const count = syncEdgeStyles(id, highlightPath, routesOn);
       setRouteCount(id ? count : 0);
       syncNodeStyles(id, highlightPath);
     }
-  }, [highlightPath, explorationOrder, routesOn, syncEdgeStyles, syncNodeStyles, animatePathReveal, animateExploration, clearAnimTimers]);
+  }, [highlightPath, explorationOrder, routesOn, isolateRoute, syncEdgeStyles, syncNodeStyles, animatePathReveal, animateExploration, clearAnimTimers, recomputeVisibility, fitNetwork]);
 
   const handleSearch = () => {
     const val = searchVal.trim().toUpperCase();
@@ -1016,7 +1076,7 @@ export default function GrafoVis({
 
   const hasExploration = explorationOrder.length > 0;
   const hintText = hasRoute
-    ? `${algoLabel}: ${highlightPath.join(" → ")} — ${highlightPath.length - 1} salto${highlightPath.length - 1 !== 1 ? "s" : ""}${hasExploration ? ` · ${explorationOrder.length} nós explorados` : ""}`
+    ? `${algoLabel}: ${highlightPath.join(" → ")} — ${highlightPath.length - 1} salto${highlightPath.length - 1 !== 1 ? "s" : ""}${isolateRoute ? " · rota isolada (setas indicam o sentido)" : hasExploration ? ` · ${explorationOrder.length} nós explorados` : ""}`
     : selectedId
       ? `${selectedId}: ${routeCount} rota${routeCount !== 1 ? "s" : ""} direta${routeCount !== 1 ? "s" : ""} — clique no fundo ou em Limpar`
       : "Clique num aeroporto para explorar · Arraste para navegar · Scroll para zoom";
@@ -1098,6 +1158,23 @@ export default function GrafoVis({
         <AppButton variant="secondary" size="sm" onClick={handleToggleRoutes}>
           {routesOn ? "Suavizar obrigatórias" : "Destacar obrigatórias"}
         </AppButton>
+
+        {hasRoute && (
+          <AppButton
+            variant={isolateRoute ? "primary" : "secondary"}
+            size="sm"
+            onClick={() => setIsolateRoute((v) => !v)}
+            aria-pressed={isolateRoute}
+            title={
+              isolateRoute
+                ? "Mostrar todos os aeroportos e rotas da malha"
+                : "Mostrar apenas os vértices e arestas da rota encontrada"
+            }
+          >
+            <Route size={14} aria-hidden="true" />
+            {isolateRoute ? "Mostrar grafo completo" : "Isolar rota"}
+          </AppButton>
+        )}
       </div>
 
       {/* Breadcrumb visual da rota */}

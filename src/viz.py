@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import math
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
@@ -20,6 +19,8 @@ from .io import (
     build_graph_from_adjacency_csv,
     load_airports_table,
 )
+
+from .outputs import read_json_list
 
 
 def _edge_key(u: str, v: str) -> Tuple[str, str]:
@@ -222,11 +223,7 @@ def plot_regioes_metricas(
 
     _matplotlib_style()
 
-    data = json.loads(
-        regioes_json.read_text(
-            encoding="utf-8"
-        )
-    )
+    data = read_json_list(regioes_json, "regioes")
 
     regioes = []
     ordens = []
@@ -290,11 +287,7 @@ def plot_regioes_densidade(
 
     _matplotlib_style()
 
-    data = json.loads(
-        regioes_json.read_text(
-            encoding="utf-8"
-        )
-    )
+    data = read_json_list(regioes_json, "regioes")
 
     regioes = []
     densidades = []

@@ -75,6 +75,7 @@ GRAFO-DE-AEROPORTOS-DO-BRASIL/
 │   ├── algorithms.py
 │   ├── directed_algorithms.py
 │   ├── io.py
+│   ├── outputs.py          # camada de saída padronizada (metadados + manifesto)
 │   ├── cli.py
 │   ├── solve.py
 │   ├── solve_parte2.py
@@ -92,6 +93,8 @@ GRAFO-DE-AEROPORTOS-DO-BRASIL/
 │
 ├── tests/
 │
+├── RELATORIO.md            # relatório escrito do projeto
+├── RELATORIO.docx          # versão Word do relatório
 ├── requirements.txt
 └── README.md
 ```
@@ -281,7 +284,8 @@ Exibe os gráficos PNG gerados pelo Python e permite abrir o grafo interativo Py
 
 ### Parte 2 — SNAP
 
-Exibe métricas do subgrafo SNAP, comparação BF × Dijkstra e demos de ciclo negativo.
+Exibe métricas do subgrafo SNAP, **árvores BFS × DFS interativas** (clique em um nó para
+destacar o caminho desde a raiz), comparação BF × Dijkstra e demos de ciclo negativo.
 
 ---
 
@@ -405,8 +409,8 @@ src/algorithms.py
 
 Implementações:
 
-* BFS
-* DFS
+* BFS (distâncias, ordem e **árvore** de busca)
+* DFS (ordem e **árvore** de busca)
 * Dijkstra
 * métricas de grafos
 
@@ -444,6 +448,8 @@ python -m unittest discover -s tests -p "test_*.py" -v
 * O dataset SNAP não possui distâncias reais.
 * O modo `synthetic_km` cria pesos positivos sintéticos apenas para fins acadêmicos.
 * O frontend React depende dos arquivos previamente gerados em `out/` pelos scripts Python.
+* Os arquivos JSON de saída seguem um padrão com bloco `_meta` de proveniência, e cada etapa
+  gera um `manifest.json` catalogando os arquivos produzidos (ver `src/outputs.py`).
 
 ---
 

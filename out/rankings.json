@@ -1,4 +1,11 @@
 {
+  "_meta": {
+    "gerado_em": "2026-06-04T21:35:36-03:00",
+    "versao_schema": "1.0",
+    "gerador": "Grafo de Aeroportos do Brasil — src.cli",
+    "parte": "parte1",
+    "descricao": "Destaques da rede: aeroporto de maior grau e ego-rede de maior densidade."
+  },
   "maior_grau": {
     "aeroporto": "GRU",
     "grau": 6

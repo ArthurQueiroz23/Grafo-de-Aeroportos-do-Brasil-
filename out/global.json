@@ -1,5 +1,12 @@
 {
+  "_meta": {
+    "gerado_em": "2026-06-04T21:35:36-03:00",
+    "versao_schema": "1.0",
+    "gerador": "Grafo de Aeroportos do Brasil — src.cli",
+    "parte": "parte1",
+    "descricao": "Métricas globais do grafo não direcionado de aeroportos: ordem (nº de vértices), tamanho (nº de arestas) e densidade."
+  },
   "ordem": 20,
   "tamanho": 20,
-  "densidade": 0.10526315789473684
+  "densidade": 0.105263
 }

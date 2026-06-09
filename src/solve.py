@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any, Dict, Set
 
@@ -8,6 +7,7 @@ import pandas as pd
 
 from .algorithms import shortest_path
 from .io import iata_to_regiao, load_routes
+from .outputs import arred, write_json, write_manifest
 
 
 def iter_edges(graph):
@@ -114,19 +114,19 @@ def run_metrics(
     global_metrics = {
         "ordem": len(vertices),
         "tamanho": qtd_arestas,
-        "densidade": densidade(
-            len(vertices),
-            qtd_arestas
+        "densidade": arred(
+            densidade(len(vertices), qtd_arestas)
         ),
     }
 
-    (out_dir / "global.json").write_text(
-        json.dumps(
-            global_metrics,
-            indent=2,
-            ensure_ascii=False
+    write_json(
+        out_dir / "global.json",
+        global_metrics,
+        parte="parte1",
+        descricao=(
+            "Métricas globais do grafo não direcionado de aeroportos: "
+            "ordem (nº de vértices), tamanho (nº de arestas) e densidade."
         ),
-        encoding="utf-8",
     )
 
     # regioes
@@ -153,17 +153,25 @@ def run_metrics(
             verts
         )
 
-        m["regiao"] = reg
+        # ordem das chaves pensada para leitura: regiao primeiro
+        regioes_out.append(
+            {
+                "regiao": reg,
+                "ordem": m["ordem"],
+                "tamanho": m["tamanho"],
+                "densidade": arred(m["densidade"]),
+            }
+        )
 
-        regioes_out.append(m)
-
-    (out_dir / "regioes.json").write_text(
-        json.dumps(
-            regioes_out,
-            indent=2,
-            ensure_ascii=False
+    write_json(
+        out_dir / "regioes.json",
+        regioes_out,
+        parte="parte1",
+        chave_conteudo="regioes",
+        descricao=(
+            "Métricas do subgrafo induzido de cada região do Brasil "
+            "(ordem, tamanho e densidade)."
         ),
-        encoding="utf-8",
     )
 
     rows_ego = []
@@ -224,28 +232,116 @@ def run_metrics(
     )
 
     # rankings
+    def _linha_limpa(serie):
+        # converte numpy -> tipos nativos e arredonda floats
+        return {
+            k: arred(v.item() if hasattr(v, "item") else v)
+            for k, v in serie.to_dict().items()
+        }
+
     rk = {
-
-        "maior_grau":
-            df_graus.iloc[0].to_dict(),
-
-        "maior_densidade_ego":
+        "maior_grau": _linha_limpa(df_graus.iloc[0]),
+        "maior_densidade_ego": _linha_limpa(
             df_ego.sort_values(
                 "densidade_ego",
                 ascending=False
-            ).iloc[0].to_dict(),
+            ).iloc[0]
+        ),
     }
 
-    (out_dir / "rankings.json").write_text(
-        json.dumps(
-            rk,
-            indent=2,
-            ensure_ascii=False
+    write_json(
+        out_dir / "rankings.json",
+        rk,
+        parte="parte1",
+        descricao=(
+            "Destaques da rede: aeroporto de maior grau e ego-rede de maior "
+            "densidade."
         ),
-        encoding="utf-8"
     )
 
     return global_metrics, regioes_out, df_ego
+
+
+def escrever_manifesto_parte1(out_dir: Path):
+
+    # catálogo de todos os arquivos de saída da Parte 1 (descoberta por
+    # integrações). Chamado ao final do pipeline para refletir o estado real.
+    return write_manifest(
+        out_dir,
+        parte="parte1",
+        titulo="Parte 1 — Rede de Aeroportos do Brasil",
+        arquivos=[
+            {
+                "arquivo": "global.json",
+                "tipo": "json",
+                "descricao": "Métricas globais do grafo (ordem, tamanho, densidade).",
+            },
+            {
+                "arquivo": "regioes.json",
+                "tipo": "json",
+                "descricao": "Métricas por região (subgrafos induzidos).",
+            },
+            {
+                "arquivo": "rankings.json",
+                "tipo": "json",
+                "descricao": "Maior grau e maior densidade de ego-rede.",
+            },
+            {
+                "arquivo": "graus.csv",
+                "tipo": "csv",
+                "descricao": "Grau de cada aeroporto, ordenado de forma decrescente.",
+                "colunas": ["aeroporto", "grau"],
+            },
+            {
+                "arquivo": "ego_aeroportos.csv",
+                "tipo": "csv",
+                "descricao": "Métricas da ego-rede de cada aeroporto.",
+                "colunas": [
+                    "aeroporto",
+                    "grau",
+                    "ordem_ego",
+                    "tamanho_ego",
+                    "densidade_ego",
+                ],
+            },
+            {
+                "arquivo": "distancias_rotas.csv",
+                "tipo": "csv",
+                "descricao": "Menor caminho (Dijkstra) das rotas de interesse.",
+                "colunas": ["origem", "destino", "custo", "caminho"],
+            },
+            {
+                "arquivo": "viz_distribuicao_graus.png",
+                "tipo": "imagem",
+                "descricao": "Histograma da distribuição de graus.",
+            },
+            {
+                "arquivo": "viz_bfs_camadas.png",
+                "tipo": "imagem",
+                "descricao": "Quantidade de aeroportos por camada de BFS a partir de GRU.",
+            },
+            {
+                "arquivo": "viz_ranking_graus.png",
+                "tipo": "imagem",
+                "descricao": "Ranking dos aeroportos mais conectados.",
+            },
+            {
+                "arquivo": "viz_regioes_metricas.png",
+                "tipo": "imagem",
+                "descricao": "Ordem e tamanho por região.",
+            },
+            {
+                "arquivo": "viz_regioes_densidade.png",
+                "tipo": "imagem",
+                "descricao": "Densidade por região.",
+            },
+            {
+                "arquivo": "viz_subgrafo_maior_grau.png",
+                "tipo": "imagem",
+                "descricao": "Subgrafo dos aeroportos mais conectados.",
+            },
+        ],
+    )
 
 
 def run_routes(

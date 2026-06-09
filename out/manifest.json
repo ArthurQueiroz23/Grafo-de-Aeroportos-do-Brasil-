@@ -1,0 +1,113 @@
+{
+  "_meta": {
+    "gerado_em": "2026-06-04T21:35:41-03:00",
+    "versao_schema": "1.0",
+    "gerador": "Grafo de Aeroportos do Brasil — src.cli",
+    "parte": "parte1",
+    "descricao": "Catálogo dos arquivos de saída — Parte 1 — Rede de Aeroportos do Brasil",
+    "total_arquivos": 12
+  },
+  "arquivos": [
+    {
+      "arquivo": "global.json",
+      "tipo": "json",
+      "descricao": "Métricas globais do grafo (ordem, tamanho, densidade).",
+      "existe": true,
+      "bytes": 387
+    },
+    {
+      "arquivo": "regioes.json",
+      "tipo": "json",
+      "descricao": "Métricas por região (subgrafos induzidos).",
+      "existe": true,
+      "bytes": 876
+    },
+    {
+      "arquivo": "rankings.json",
+      "tipo": "json",
+      "descricao": "Maior grau e maior densidade de ego-rede.",
+      "existe": true,
+      "bytes": 488
+    },
+    {
+      "arquivo": "graus.csv",
+      "tipo": "csv",
+      "descricao": "Grau de cada aeroporto, ordenado de forma decrescente.",
+      "colunas": [
+        "aeroporto",
+        "grau"
+      ],
+      "existe": true,
+      "bytes": 156
+    },
+    {
+      "arquivo": "ego_aeroportos.csv",
+      "tipo": "csv",
+      "descricao": "Métricas da ego-rede de cada aeroporto.",
+      "colunas": [
+        "aeroporto",
+        "grau",
+        "ordem_ego",
+        "tamanho_ego",
+        "densidade_ego"
+      ],
+      "existe": true,
+      "bytes": 517
+    },
+    {
+      "arquivo": "distancias_rotas.csv",
+      "tipo": "csv",
+      "descricao": "Menor caminho (Dijkstra) das rotas de interesse.",
+      "colunas": [
+        "origem",
+        "destino",
+        "custo",
+        "caminho"
+      ],
+      "existe": true,
+      "bytes": 301
+    },
+    {
+      "arquivo": "viz_distribuicao_graus.png",
+      "tipo": "imagem",
+      "descricao": "Histograma da distribuição de graus.",
+      "existe": true,
+      "bytes": 44888
+    },
+    {
+      "arquivo": "viz_bfs_camadas.png",
+      "tipo": "imagem",
+      "descricao": "Quantidade de aeroportos por camada de BFS a partir de GRU.",
+      "existe": true,
+      "bytes": 47776
+    },
+    {
+      "arquivo": "viz_ranking_graus.png",
+      "tipo": "imagem",
+      "descricao": "Ranking dos aeroportos mais conectados.",
+      "existe": true,
+      "bytes": 60226
+    },
+    {
+      "arquivo": "viz_regioes_metricas.png",
+      "tipo": "imagem",
+      "descricao": "Ordem e tamanho por região.",
+      "existe": true,
+      "bytes": 48563
+    },
+    {
+      "arquivo": "viz_regioes_densidade.png",
+      "tipo": "imagem",
+      "descricao": "Densidade por região.",
+      "existe": true,
+      "bytes": 56358
+    },
+    {
+      "arquivo": "viz_subgrafo_maior_grau.png",
+      "tipo": "imagem",
+      "descricao": "Subgrafo dos aeroportos mais conectados.",
+      "existe": true,
+      "bytes": 71869
+    }
+  ]
+}
