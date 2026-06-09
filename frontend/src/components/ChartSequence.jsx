@@ -5,7 +5,7 @@ export default function ChartSequence({ images, onOpen }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(min(460px, 100%), 1fr))",
+        gridTemplateColumns: "1fr",
         gap: "var(--space-6)",
         alignItems: "start",
       }}
