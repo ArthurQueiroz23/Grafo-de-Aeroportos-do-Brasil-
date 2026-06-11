@@ -451,6 +451,12 @@ python -m unittest discover -s tests -p "test_*.py" -v
 * Os arquivos JSON de saída seguem um padrão com bloco `_meta` de proveniência, e cada etapa
   gera um `manifest.json` catalogando os arquivos produzidos (ver `src/outputs.py`).
 
+# 14.1 Declaração sobre uso de Inteligência Artificial
+
+Para fins de transparência acadêmica, informa-se que ferramentas de Inteligência Artificial foram utilizadas exclusivamente como apoio na elaboração dos slides da apresentação do projeto.
+
+O desenvolvimento do sistema, implementação dos algoritmos, modelagem dos grafos, análise dos resultados, geração das visualizações, redação do relatório e demais artefatos acadêmicos foram realizados pelos autores do projeto.
+
 ---
 
 # 15. Referências
